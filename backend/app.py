@@ -250,7 +250,11 @@ def donate(id:str,payload:DonationInput,user=Depends(current_user)):
     require(user,'donor')
     donation_id=uid()
     with connect(write=True) as db:
-        if not db.execute('SELECT id FROM campaigns WHERE id=?',(id,)).fetchone(): raise HTTPException(404,'Không tìm thấy chiến dịch.')
+        campaign=db.execute('SELECT id,owner_id FROM campaigns WHERE id=?',(id,)).fetchone()
+        if not campaign: raise HTTPException(404,'Không tìm thấy chiến dịch.')
+        # Never let a classroom demo identity create a claim in a real campaign.
+        if user['id']=='aureva_demo_donor_v1' and campaign['owner_id']!='aureva_demo_manager_v1':
+            raise HTTPException(403,'Tài khoản trình diễn chỉ được ghi nhận trong chiến dịch DEMO.')
         ensure_campaign_active(db,id)
         try: db.execute('INSERT INTO donations(id,campaign_id,donor_id,amount,reference,created) VALUES(?,?,?,?,?,?)',(donation_id,id,user['id'],payload.amount,payload.reference,now()))
         except (sqlite3.IntegrityError,PostgresIntegrityError): raise HTTPException(409,'Mã tham chiếu đã tồn tại trong chiến dịch.')
