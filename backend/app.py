@@ -33,6 +33,8 @@ def init_db():
         ''')
         from backend.evidence import init_schema
         init_schema(db)
+        from backend.campaign_media import init_sqlite
+        init_sqlite(db)
 
 @contextmanager
 def connect(write=False):
@@ -172,8 +174,12 @@ def logout(request: Request,response: Response):
 CAMPAIGN_SQL='''SELECT c.*, u.name AS manager_name,
 COALESCE((SELECT SUM(amount) FROM donations WHERE campaign_id=c.id AND status='confirmed'),0) AS raised,
 COALESCE((SELECT SUM(amount) FROM expenses WHERE campaign_id=c.id AND status='approved'),0) AS spent,
-(SELECT COUNT(*) FROM donations WHERE campaign_id=c.id AND status='confirmed') AS contribution_count
-FROM campaigns c JOIN users u ON c.owner_id=u.id'''
+(SELECT COUNT(*) FROM donations WHERE campaign_id=c.id AND status='confirmed') AS contribution_count,
+CASE WHEN cover.campaign_id IS NOT NULL
+     THEN '/api/public/campaigns/' || c.id || '/cover?v=' || substr(cover.sha256,1,12)
+     ELSE NULL END AS cover_url
+FROM campaigns c JOIN users u ON c.owner_id=u.id
+LEFT JOIN campaign_covers cover ON cover.campaign_id=c.id'''
 @app.get('/api/public/dashboard')
 def dashboard():
     with connect() as db:
@@ -280,6 +286,10 @@ from backend.evidence import register as register_evidence
 register_evidence(app)
 from backend.chain import register as register_chain
 register_chain(app)
+from backend.campaign_media import register as register_campaign_media
+register_campaign_media(app)
+from backend.activity import register as register_activity
+register_activity(app)
 
 dist=ROOT/'frontend/dist'
 if dist.exists():
