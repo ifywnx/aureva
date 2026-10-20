@@ -101,6 +101,10 @@ def current_user(request: Request):
     with connect() as db:
         user = db.execute('SELECT u.* FROM users u JOIN sessions s ON u.id=s.user_id WHERE s.token=? AND s.expires>?', (digest(token), int(time.time()))).fetchone()
     if not user: raise HTTPException(401, 'Vui lòng đăng nhập.')
+    if user['id'] in ('aureva_demo_donor_v1', 'aureva_demo_manager_v1', 'aureva_demo_approver_v1'):
+        from backend.demo import enabled as demo_enabled
+        if not demo_enabled():
+            raise HTTPException(401, 'Phiên trình diễn đã kết thúc.')
     return dict(user)
 
 def require(user, *roles):
