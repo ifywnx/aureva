@@ -60,6 +60,17 @@ def register(app):
             raise HTTPException(409,'TX không ghi đúng mã băm bằng ví chủ hợp đồng AUREVA.')
         return tx
 
+    @app.get('/api/public/chain/status')
+    def onchain_status():
+        """Contract-only health check, works before the Preview database is connected."""
+        try:
+            w3,contract,owner=read_client()
+            contract.functions.recordedAt(bytes(32)).call()
+            return {'status':'connected','chain_id':CHAIN_ID,'contract':contract.address,
+                    'owner':owner,'contract_code_bytes':len(w3.eth.get_code(contract.address))}
+        except HTTPException:raise
+        except Exception:raise HTTPException(502,'Không xác minh được hợp đồng Sepolia qua RPC.')
+
     @app.post('/api/attestations/{entity_id}/prepare-wallet')
     def prepare_wallet(entity_id:str,user=Depends(current_user)):
         require(user,'manager','approver')
