@@ -14,7 +14,7 @@ export function DemoRoleBar({enabled,user,busy,onSwitch}:{
  enabled:boolean;user:CurrentUser;busy:boolean;onSwitch:(role:DemoRole)=>void
 }){
  if(!enabled)return null;
- return <aside className="aureva-demo-bar" aria-label="Chuyển tài khoản thuyết trình">
+ return <div className="aureva-demo-bar" role="region" aria-label="Chuyển tài khoản thuyết trình">
   <div className="aureva-demo-label">
    <span className="aureva-demo-label-badge"><Sparkles size={13}/> DEMO</span>
    <span>Đổi tài khoản một chạm <small>Chỉ dữ liệu thử nghiệm</small></span>
@@ -31,5 +31,5 @@ export function DemoRoleBar({enabled,user,busy,onSwitch}:{
     </button>;
    })}
   </div>
- </aside>;
+ </div>;
 }
