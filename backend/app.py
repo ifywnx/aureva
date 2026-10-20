@@ -191,6 +191,7 @@ CAMPAIGN_SQL='''SELECT c.*, u.name AS manager_name,
 COALESCE((SELECT SUM(amount) FROM donations WHERE campaign_id=c.id AND status='confirmed'),0) AS raised,
 COALESCE((SELECT SUM(amount) FROM expenses WHERE campaign_id=c.id AND status='approved'),0) AS spent,
 (SELECT COUNT(*) FROM donations WHERE campaign_id=c.id AND status='confirmed') AS contribution_count,
+EXISTS(SELECT 1 FROM audit a WHERE a.entity_id=c.id AND a.action='campaign.closed') AS is_closed,
 CASE WHEN cover.campaign_id IS NOT NULL
      THEN '/api/public/campaigns/' || c.id || '/cover?v=' || substr(cover.sha256,1,12)
      ELSE NULL END AS cover_url
@@ -213,6 +214,25 @@ def create_campaign(payload: CampaignInput,user=Depends(current_user)):
         audit(db,user,'campaign.created',id,{**payload.model_dump(),'is_demo':is_demo_manager})
     return {'id':id}
 
+def ensure_campaign_active(db,id):
+    """Lifecycle events are append-only in audit: no production schema migration."""
+    if db.execute("SELECT 1 FROM audit WHERE entity_id=? AND action='campaign.closed' LIMIT 1",(id,)).fetchone():
+        raise HTTPException(409,'Chiến dịch đã kết thúc, không nhận thêm đóng góp hoặc đề xuất chi.')
+
+@app.post('/api/campaigns/{id}/close')
+def close_campaign(id:str,user=Depends(current_user)):
+    require(user,'manager')
+    with connect(write=True) as db:
+        campaign_access(db,id,user)
+        ensure_campaign_active(db,id)
+        pending=db.execute("""SELECT
+            (SELECT COUNT(*) FROM donations WHERE campaign_id=? AND status='pending')+
+            (SELECT COUNT(*) FROM expenses WHERE campaign_id=? AND status='pending')""",(id,id)).fetchone()[0]
+        if pending:
+            raise HTTPException(409,'Cần đối soát hoặc xử lý tất cả đóng góp và khoản chi đang chờ trước khi kết thúc.')
+        audit(db,user,'campaign.closed',id,{'status':'closed'})
+    return {'id':id,'status':'closed'}
+
 @app.get('/api/public/campaigns/{id}')
 def campaign_detail(id:str):
     with connect() as db:
@@ -229,6 +249,7 @@ def donate(id:str,payload:DonationInput,user=Depends(current_user)):
     donation_id=uid()
     with connect(write=True) as db:
         if not db.execute('SELECT id FROM campaigns WHERE id=?',(id,)).fetchone(): raise HTTPException(404,'Không tìm thấy chiến dịch.')
+        ensure_campaign_active(db,id)
         try: db.execute('INSERT INTO donations(id,campaign_id,donor_id,amount,reference,created) VALUES(?,?,?,?,?,?)',(donation_id,id,user['id'],payload.amount,payload.reference,now()))
         except (sqlite3.IntegrityError,PostgresIntegrityError): raise HTTPException(409,'Mã tham chiếu đã tồn tại trong chiến dịch.')
         audit(db,user,'donation.submitted',donation_id,{'amount':payload.amount})
@@ -275,6 +296,7 @@ def expense(id:str,payload:ExpenseInput,user=Depends(current_user)):
     expense_id=uid()
     with connect(write=True) as db:
         campaign_access(db,id,user)
+        ensure_campaign_active(db,id)
         db.execute('INSERT INTO expenses(id,campaign_id,creator_id,amount,purpose,vendor,created) VALUES(?,?,?,?,?,?,?)',(expense_id,id,user['id'],payload.amount,payload.purpose,payload.vendor,now()))
         audit(db,user,'expense.submitted',expense_id,payload.model_dump())
     return {'id':expense_id,'status':'pending'}
