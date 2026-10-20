@@ -1,0 +1,80 @@
+{
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "digest",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "actor",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "Recorded",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "digest",
+          "type": "bytes32"
+        }
+      ],
+      "name": "record",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "recordedAt",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60a0604052348015600f57600080fd5b503360805260805161022761003460003960008181604b015260d801526102276000f3fe608060405234801561001057600080fd5b50600436106100415760003560e01c80638da5cb5b14610046578063b5c645bd1461008a578063bc23adb71461009f575b600080fd5b61006d7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b61009d6100983660046101d8565b6100cd565b005b6100bf6100ad3660046101d8565b60006020819052908152604090205481565b604051908152602001610081565b336001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016146101395760405162461bcd60e51b815260206004820152600c60248201526b155b985d5d1a1bdc9a5e995960a21b60448201526064015b60405180910390fd5b806101755760405162461bcd60e51b815260206004820152600c60248201526b115b5c1d1e48191a59d95cdd60a21b6044820152606401610130565b6000818152602081905260409020541561018c5750565b6000818152602081815260409182902042908190559151918252339183917fc4010a01a103c0f58e041a8695f9aea8133f5a3714196b841ddadc216d9ac224910160405180910390a350565b6000602082840312156101ea57600080fd5b503591905056fea2646970667358221220f05fd36a420c20e7dae3295893a3809f78679c2bc7f17750ca8e9f36e6b7625564736f6c634300081e0033"
+}

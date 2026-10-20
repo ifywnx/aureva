@@ -1,0 +1,1 @@
+{"name":"aureva-registry","private":true,"scripts":{"build":"node compile.cjs"},"devDependencies":{"solc":"0.8.30"}}
