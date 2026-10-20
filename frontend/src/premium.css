@@ -386,3 +386,49 @@ h1,h2,h3{letter-spacing:-.04em}
 @media(prefers-reduced-motion:reduce){
  .identity-shell .btn,.proof-visual,.work-sidebar>button,.identity-shell .campaign{animation:none!important;transition:none!important}
 }
+
+/* Campaign details: factual layout and readable audit ledger */
+.campaign-detail{padding-top:26px}
+.identity-shell .detail-back{margin:0 0 15px;padding:10px 0;color:#537D7A;font-size:11px}
+.detail-hero{display:grid;grid-template-columns:minmax(0,1fr) 355px;gap:30px;align-items:center;padding:38px 38px 39px;background:linear-gradient(115deg,#F0F7F1,#FAFBF7);border:1px solid #DCE8DE;border-radius:17px}
+.detail-hero-copy h1{font-size:clamp(31px,3.4vw,46px);line-height:1.24;margin:13px 0 17px;letter-spacing:-.05em;color:#213B44}
+.detail-hero-copy p{line-height:1.98;font-size:12px;color:#71898A;margin:0 0 19px;white-space:pre-wrap}
+.detail-owner{display:inline-flex;gap:9px;align-items:center;color:#46786E;font-size:10px}
+.detail-funding{padding:27px;border-radius:13px;border:1px solid #E5ECE5;background:#fff;box-shadow:0 9px 28px #17484317}
+.detail-funding>strong{display:block;font-size:clamp(24px,2.7vw,36px);letter-spacing:-.05em;color:#275B5A;margin:19px 0 6px;overflow-wrap:anywhere}
+.detail-funding>small{display:block;color:#8D9C9B;font-size:11px}
+.detail-funding progress{width:100%;height:9px;margin:23px 0 12px}
+.detail-funding>div{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#859A99;font-size:10px}
+.detail-funding>div b{color:#2A746A}
+.detail-metrics{margin:18px 0 23px}
+.detail-metrics .metric{margin:0}
+.detail-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:22px 0 42px}
+.detail-actions>span{display:flex;align-items:center;gap:7px;color:#7F9390;font-size:10px}
+.detail-actions>span svg{color:#3B8377}
+.detail-ledger-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+.detail-ledger{min-width:0;border:1px solid #E4EAE4;border-radius:14px;background:#fff;padding:23px}
+.detail-ledger h2{font-size:20px;letter-spacing:-.035em;margin:9px 0 18px}
+.detail-ledger .records{margin:0;gap:9px}
+.detail-ledger .records article{padding:15px;background:#F9FBF8;border:1px solid #EDF1EC;box-shadow:none}
+.detail-ledger .record-line{gap:9px}
+.detail-ledger .record-line>div{flex-basis:100%}
+.detail-ledger .record-line b{font-size:11px}
+.detail-ledger .record-line strong{font-size:14px;color:#1F6361;margin-right:auto}
+.detail-ledger .record-line .badge{margin-left:auto}
+.detail-ledger .reason{font-size:10px}
+.detail-disclaimer{display:flex;align-items:start;gap:11px;padding:17px 20px;background:#F1F6F1;border:1px solid #E1EBE2;color:#748C83;border-radius:11px;font-size:11px;line-height:1.9;margin-top:26px}
+.detail-disclaimer svg{flex-shrink:0;color:#498678;margin-top:2px}
+@media(max-width:900px){.detail-hero{grid-template-columns:1fr}.detail-ledger-grid{grid-template-columns:1fr}}
+@media(max-width:650px){
+.campaign-detail{padding-top:13px}
+.detail-hero{padding:23px 17px;gap:20px}
+.detail-hero-copy h1{font-size:31px}
+.detail-funding{padding:20px}
+.detail-metrics{grid-template-columns:1fr}
+.detail-actions{margin-bottom:27px}
+.detail-ledger{padding:17px}
+.detail-ledger h2{font-size:18px}
+.detail-ledger .record-line{flex-wrap:wrap}
+.detail-ledger .record-line>div{flex-basis:100%}
+.detail-disclaimer{padding:13px;font-size:10px}
+}
