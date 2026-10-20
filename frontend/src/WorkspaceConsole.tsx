@@ -21,12 +21,16 @@ export function WorkspaceConsole({user,owned,donations,expenses,busy,onCreateCam
  const pendingDonations=donations.filter(r=>r.status==='pending');
  const pendingExpenses=expenses.filter(r=>r.status==='pending');
  const tabs=[{id:'overview',name:'Tổng quan',icon:<LayoutDashboard size={17}/>},
-   ...(donor?[]:[{id:'donations',name:'Đối soát đóng góp',icon:<Wallet size={17}/>},{id:'expenses',name:approver?'Chờ phê duyệt':'Khoản chi & AI',icon:<ClipboardCheck size={17}/>}])];
+   ...(donor?[]:[...(manager?[{id:'donations',name:'Đối soát đóng góp',icon:<Wallet size={17}/>}]:[]),{id:'expenses',name:approver?'Chờ phê duyệt':'Khoản chi & AI',icon:<ClipboardCheck size={17}/>}])];
  const totalConfirmed=donations.filter(r=>r.status==='confirmed').reduce((sum,r)=>sum+r.amount,0);
  const approved=expenses.filter(r=>r.status==='approved').reduce((sum,r)=>sum+r.amount,0);
- const summary=[{label:'Đóng góp đã xác nhận',value:money(totalConfirmed),icon:<Wallet size={19}/>},
-  {label:'Khoản chi đã duyệt',value:money(approved),icon:<CheckCircle2 size={19}/>},
-  {label:approver?'Chờ phê duyệt':'Cần đối soát',value:String(approver?pendingExpenses.length:pendingDonations.length).padStart(2,'0'),icon:<FileClock size={19}/>}];
+ const summary=approver
+  ?[{label:'Khoản chi đã duyệt',value:money(approved),icon:<CheckCircle2 size={19}/>},
+    {label:'Khoản chi chờ duyệt',value:String(pendingExpenses.length).padStart(2,'0'),icon:<FileClock size={19}/>},
+    {label:'Hồ sơ đã xử lý',value:String(expenses.length-pendingExpenses.length).padStart(2,'0'),icon:<ClipboardCheck size={19}/>}]
+  :[{label:'Đóng góp đã xác nhận',value:money(totalConfirmed),icon:<Wallet size={19}/>},
+    {label:'Khoản chi đã duyệt',value:money(approved),icon:<CheckCircle2 size={19}/>},
+    {label:'Cần đối soát',value:String(pendingDonations.length).padStart(2,'0'),icon:<FileClock size={19}/>}];
  return <div className="work-console">
   <div className="work-welcome">
    <div><span className="eyebrow">AUREVA / KHÔNG GIAN LÀM VIỆC</span><h1>{donor?'Đóng góp của tôi':approver?'Trung tâm phê duyệt':'Bảng điều hành cứu trợ'}</h1><p>{donor?'Theo dõi những khoản bạn đã ghi nhận và quá trình đối soát.':approver?'Đánh giá chứng từ, kiểm tra cảnh báo AI và lưu quyết định có trách nhiệm.':'Quản lý chiến dịch, xác nhận đóng góp thực nhận và hoàn thiện hồ sơ khoản chi.'}</p></div>
