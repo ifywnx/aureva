@@ -79,7 +79,16 @@ async def guard(request: Request, call_next):
         origin = request.headers.get('origin')
         allowed = os.getenv('AUREVA_ORIGIN', 'http://127.0.0.1:8001')
         if origin and origin not in (allowed, 'http://localhost:8001'):
-            return JSONResponse({'detail':'Nguồn yêu cầu không được phép.'}, status_code=403)
+            # Preview builds have unique URLs. Allow same-host HTTPS origins only on
+            # Vercel preview and only when the isolated preview DB schema is active.
+            host=request.headers.get('host','').lower()
+            same_host_preview=(
+                os.getenv('AUREVA_DB_SCHEMA')=='aureva_preview'
+                and host.endswith('.vercel.app')
+                and origin=='https://'+host
+            )
+            if not same_host_preview:
+                return JSONResponse({'detail':'Nguồn yêu cầu không được phép.'}, status_code=403)
     response = await call_next(request)
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['Referrer-Policy'] = 'same-origin'
