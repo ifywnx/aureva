@@ -4,19 +4,37 @@ from pathlib import Path
 from fastapi import Depends,HTTPException
 CHAIN_ID=11155111
 
-def configured():return all(os.getenv(k) for k in ('SEPOLIA_RPC_URL','BLOCKCHAIN_PRIVATE_KEY','AUREVA_CONTRACT_ADDRESS'))
-def client():
-    if not configured():raise HTTPException(503,'Chưa cấu hình RPC, ví testnet và hợp đồng AUREVA.')
+def configured():
+    return all(os.getenv(k) for k in ('SEPOLIA_RPC_URL','AUREVA_CONTRACT_ADDRESS'))
+
+def read_client():
+    if not configured():
+        raise HTTPException(503,'Chưa cấu hình RPC và địa chỉ hợp đồng AUREVA.')
     from web3 import Web3
     w3=Web3(Web3.HTTPProvider(os.environ['SEPOLIA_RPC_URL'],request_kwargs={'timeout':15}))
-    if w3.eth.chain_id!=CHAIN_ID:raise HTTPException(503,'Chỉ cho phép mạng Ethereum Sepolia testnet.')
+    if w3.eth.chain_id!=CHAIN_ID:
+        raise HTTPException(503,'Chỉ cho phép mạng Ethereum Sepolia.')
     address=w3.to_checksum_address(os.environ['AUREVA_CONTRACT_ADDRESS'])
-    if not w3.eth.get_code(address):raise HTTPException(503,'Không tìm thấy hợp đồng tại địa chỉ cấu hình.')
+    if not w3.eth.get_code(address):
+        raise HTTPException(503,'Không tìm thấy bytecode hợp đồng Sepolia.')
     artifact=json.loads((Path(__file__).resolve().parents[1]/'blockchain/artifact.json').read_text())
     contract=w3.eth.contract(address=address,abi=artifact['abi'])
+    owner=contract.functions.owner().call()
+    return w3,contract,owner
+
+def client():
+    """Legacy server signing, only available with an explicit test wallet secret."""
+    if not os.getenv('BLOCKCHAIN_PRIVATE_KEY'):
+        raise HTTPException(503,'Không có ví ký trên server. Hãy ký bằng MetaMask.')
+    w3,contract,owner=read_client()
     account=w3.eth.account.from_key(os.environ['BLOCKCHAIN_PRIVATE_KEY'])
-    if contract.functions.owner().call()!=account.address:raise HTTPException(503,'Ví ký không phải chủ hợp đồng AUREVA.')
+    if owner.lower()!=account.address.lower():
+        raise HTTPException(503,'Ví ký không phải chủ hợp đồng AUREVA.')
     return w3,contract,account
+
+from pydantic import BaseModel, Field
+class WalletTransaction(BaseModel):
+    tx_hash: str = Field(pattern=r'^0x[0-9a-fA-F]{64}$')
 
 def register(app):
     from backend.app import current_user,require,connect,campaign_access
