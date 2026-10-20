@@ -1,5 +1,5 @@
-import {useState,type CSSProperties} from 'react';
-import {ArrowDownRight, Blocks, BrainCircuit, CheckCircle2, FileCheck2, HeartHandshake, ShieldCheck, Sparkles} from 'lucide-react';
+import {useState,type CSSProperties,type PointerEvent} from 'react';
+import {ArrowDownRight, Blocks, BrainCircuit, CheckCircle2, HeartHandshake, Sparkles} from 'lucide-react';
 import {motion,useReducedMotion} from 'framer-motion';
 
 const nodes=[
@@ -12,7 +12,7 @@ export function ProofOrbit({aiEnabled,chainEnabled}:{aiEnabled:boolean;chainEnab
  const reduce=useReducedMotion();
  const [tilt,setTilt]=useState({x:0,y:0});
  const style={'--orbit-rotate-x':tilt.x+'deg','--orbit-rotate-y':tilt.y+'deg'} as CSSProperties;
- function pointerMove(e:React.PointerEvent<HTMLDivElement>){
+ function pointerMove(e:PointerEvent<HTMLDivElement>){
   if(reduce||e.pointerType==='touch')return;
   const rect=e.currentTarget.getBoundingClientRect();
   const x=(e.clientX-rect.left)/rect.width-.5, y=(e.clientY-rect.top)/rect.height-.5;
