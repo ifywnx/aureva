@@ -153,8 +153,15 @@ def decision_evidence(db,expense,user,decision):
     doc=db.execute('SELECT * FROM documents WHERE expense_id=?',(expense['id'],)).fetchone()
     if decision.status=='approved' and (not doc or doc['ai_status']!='completed'):
         raise HTTPException(409,'Cần tải chứng từ và hoàn tất phân tích AI trước khi duyệt chi.')
-    payload={'schema':'aureva.decision.v1','expense_id':expense['id'],'campaign_id':expense['campaign_id'],'amount_vnd':expense['amount'],'purpose':expense['purpose'],'decision':decision.status,'reason':decision.reason,'reviewer_id':user['id'],'created':now(),'document_sha256':doc['sha256'] if doc else None,'ai_result_sha256':sha(doc['ai_result'].encode()) if doc and doc['ai_result'] else None,'warnings':warnings(db,expense,doc)}
+    alerts=warnings(db,expense,doc)
+    if decision.status=='approved' and alerts:
+        if not decision.warnings_acknowledged:
+            raise HTTPException(409,'Có cảnh báo AI cần xác minh. Hãy xác nhận đã kiểm tra từng cảnh báo trước khi duyệt.')
+        if len(decision.reason.strip())<15:
+            raise HTTPException(409,'Khoản chi có cảnh báo cần ghi lý do xác minh tối thiểu 15 ký tự.')
+    payload={'schema':'aureva.decision.v1','expense_id':expense['id'],'campaign_id':expense['campaign_id'],'amount_vnd':expense['amount'],'purpose':expense['purpose'],'decision':decision.status,'reason':decision.reason,'reviewer_id':user['id'],'created':now(),'document_sha256':doc['sha256'] if doc else None,'ai_result_sha256':sha(doc['ai_result'].encode()) if doc and doc['ai_result'] else None,'warnings':alerts,'warnings_acknowledged':decision.status=='approved' and decision.warnings_acknowledged}
     add_attestation(db,'decision',expense['id'],payload)
+    return alerts
 
 def register(app):
     from backend.app import current_user,connect,require,campaign_access,uid,now,audit,campaign_detail
