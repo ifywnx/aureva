@@ -1,4 +1,5 @@
 """Small DB-API adapter; application queries remain parameterized on both databases."""
+import os
 from decimal import Decimal
 import psycopg
 from psycopg.rows import dict_row
@@ -16,8 +17,15 @@ class Cursor:
 class Connection:
     def __init__(self,url,write=False):
         self.conn=psycopg.connect(url,connect_timeout=15,prepare_threshold=None,row_factory=dict_row)
-        self.conn.execute('SET LOCAL search_path TO aureva')
-        if write:self.conn.execute('SELECT pg_advisory_xact_lock(724201028)')
+        schema=os.getenv('AUREVA_DB_SCHEMA','aureva')
+        if schema not in ('aureva','aureva_preview'):
+            self.conn.close()
+            raise ValueError('AUREVA_DB_SCHEMA must be aureva or aureva_preview')
+        # Transaction-local search path: no cross-request schema leakage with a pooler.
+        self.conn.execute("SELECT pg_catalog.set_config('search_path', %s, true)", (schema,))
+        if write:
+            lock_id=724201029 if schema=='aureva_preview' else 724201028
+            self.conn.execute('SELECT pg_advisory_xact_lock(%s)',(lock_id,))
     def execute(self,sql,args=()):return Cursor(self.conn.execute(sql.replace('?','%s'),args))
     def commit(self):self.conn.commit()
     def rollback(self):self.conn.rollback()
