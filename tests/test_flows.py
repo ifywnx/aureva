@@ -119,3 +119,29 @@ def test_campaign_closure_is_audited_and_stops_new_money_operations(env):
     assert manager.post(f'/api/campaigns/{cid}/reports',json={}).status_code==201
     with env.connect() as db:
         assert db.execute("SELECT COUNT(*) FROM audit WHERE entity_id=? AND action='campaign.closed'",(cid,)).fetchone()[0]==1
+
+
+def test_manager_can_reject_unverified_donation_without_inflating_ledger(env):
+    m,d,p,other=client('manager'),client('donor'),client('approver'),client('other')
+    cid=campaign(m)
+    item=d.post(f'/api/campaigns/{cid}/donations',json={'amount':150000,'reference':'bank-unverified-001'})
+    assert item.status_code==201
+    did=item.json()['id']
+    assert d.post(f'/api/donations/{did}/reject',json={'reason':'Chưa thấy chuyển tiền'}).status_code==403
+    assert p.post(f'/api/donations/{did}/reject',json={'reason':'Chưa thấy chuyển tiền'}).status_code==403
+    assert other.post(f'/api/donations/{did}/reject',json={'reason':'Chưa thấy chuyển tiền'}).status_code==403
+    assert m.post(f'/api/donations/{did}/reject',json={'reason':'x'}).status_code==422
+    rejected=m.post(f'/api/donations/{did}/reject',json={'reason':'Không tìm thấy giao dịch tương ứng'})
+    assert rejected.status_code==200,rejected.text
+    assert rejected.json()['status']=='rejected'
+    assert m.post(f'/api/donations/{did}/reject',json={'reason':'Kiểm tra lại'}).status_code==409
+    assert m.post(f'/api/donations/{did}/confirm',json={}).status_code==409
+    assert d.get('/api/public/dashboard').json()['raised']==0
+    donor_view=d.get('/api/workspace').json()['donations']
+    assert donor_view[0]['status']=='rejected'
+    with env.connect() as db:
+        history=db.execute("SELECT action,detail FROM audit WHERE entity_id=? ORDER BY id DESC",(did,)).fetchone()
+    assert history['action']=='donation.rejected'
+    assert 'Không tìm thấy giao dịch' in history['detail']
+    # Closing a campaign remains possible after its outstanding claim is rejected.
+    assert m.post(f'/api/campaigns/{cid}/close',json={}).status_code==200
