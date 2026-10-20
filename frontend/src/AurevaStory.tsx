@@ -64,9 +64,9 @@ export function TechnologyShowcase({data,onTransparency}:{data:Metrics|null;onTr
      <h2 id="v5-tech-heading">Một luồng cứu trợ.<br/><em>Hai lớp kiểm chứng.</em></h2>
      <p>AI giúp tìm chênh lệch từ chứng từ thực. Con người có trách nhiệm phê duyệt. Blockchain lưu dấu để đối chiếu lịch sử khi giao dịch được xác nhận.</p>
      <div className="v5-tech-features">
-      <motion.article initial={reduced?false:{opacity:0,y:18}} whileInView={{opacity:1,y:0}} viewport={{once:true}}><span><BrainCircuit size={21}/></span><div><strong>AI kiểm tra hóa đơn</strong><small>Đọc ảnh/PDF, đối chiếu số tiền và cảnh báo các điểm cần kiểm tra</small></div></motion.article>
-      <motion.article initial={reduced?false:{opacity:0,y:18}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:.1}}><span><Fingerprint size={21}/></span><div><strong>Blockchain lưu dấu</strong><small>SHA-256, lịch sử quyết định, giao dịch thật trên Sepolia khi tích hợp</small></div></motion.article>
-      <motion.article initial={reduced?false:{opacity:0,y:18}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:.2}}><span><FileCheck2 size={21}/></span><div><strong>Báo cáo công khai</strong><small>Xuất PDF từ dữ liệu thực và cho phép đối chiếu toàn vẹn</small></div></motion.article>
+      <motion.article initial={false} whileHover={reduced?undefined:{y:-3}} transition={{duration:.22}}><span><BrainCircuit size={21}/></span><div><strong>AI kiểm tra hóa đơn</strong><small>Đọc ảnh/PDF, đối chiếu số tiền và cảnh báo các điểm cần kiểm tra</small></div></motion.article>
+      <motion.article initial={false} whileHover={reduced?undefined:{y:-3}} transition={{duration:.22}}><span><Fingerprint size={21}/></span><div><strong>Blockchain lưu dấu</strong><small>SHA-256, lịch sử quyết định, giao dịch thật trên Sepolia khi tích hợp</small></div></motion.article>
+      <motion.article initial={false} whileHover={reduced?undefined:{y:-3}} transition={{duration:.22}}><span><FileCheck2 size={21}/></span><div><strong>Báo cáo công khai</strong><small>Xuất PDF từ dữ liệu thực và cho phép đối chiếu toàn vẹn</small></div></motion.article>
      </div>
      <button className="v5-tech-link" onClick={onTransparency}>Khám phá hệ thống minh bạch <ArrowUpRight size={18}/></button>
    </div>
