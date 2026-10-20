@@ -20,7 +20,7 @@ def test_invoice_api_failure_warnings_and_immutable_report(env,monkeypatch):
     assert m.post(f'/api/expenses/{eid}/document',files={'file':('test.png',png())}).status_code==201
     assert d.get(f'/api/expenses/{eid}/document').status_code==403
     assert TestClient(a.app).get(f'/api/expenses/{eid}/document').status_code==401
-    monkeypatch.delenv('GEMINI_API_KEY',raising=False)
+    monkeypatch.delenv('OPENAI_API_KEY',raising=False)
     assert m.post(f'/api/expenses/{eid}/analyze',json={}).status_code==503
     assert m.get('/api/workspace').json()['expenses'][0]['document']['ai_status']=='failed'
     # Tests stub only the provider boundary; production always makes the real API request.
