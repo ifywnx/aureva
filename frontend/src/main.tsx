@@ -115,7 +115,7 @@ function App(){
   </div>
   <div className="actions detail-actions">
     {!user&&<button className="btn primary" onClick={()=>open('login')}>Đăng nhập để ghi nhận đóng góp <ArrowUpRight size={16}/></button>}
-    {user?.role==='donor'&&!detail.campaign.is_closed&&(!isDemoDonor||detail.campaign.owner_id==='aureva_demo_manager_v1')&&<button className="btn primary" onClick={()=>open('donation',detail.campaign)}>{isDemoDonor?'Ghi nhận đóng góp DEMO':'Ghi nhận đóng góp'} <HeartHandshake size={16}/></button>
+    {user?.role==='donor'&&!detail.campaign.is_closed&&(!isDemoDonor||detail.campaign.owner_id==='aureva_demo_manager_v1')&&<button className="btn primary" onClick={()=>open('donation',detail.campaign)}>{isDemoDonor?'Ghi nhận đóng góp DEMO':'Ghi nhận đóng góp'} <HeartHandshake size={16}/></button>}
     {user?.role==='manager'&&user.id===detail.campaign.owner_id&&!detail.campaign.is_closed&&<button className="btn primary" onClick={()=>open('expense',detail.campaign)}>Đề xuất khoản chi <Plus size={16}/></button>}
     {user?.role==='manager'&&user.id===detail.campaign.owner_id&&!detail.campaign.is_closed&&<button className="btn light" disabled={busy} onClick={()=>void closeCampaign(detail.campaign.id)}>Kết thúc chiến dịch</button>}
     {detail.campaign.is_closed&&<span><ShieldCheck size={16}/> Chiến dịch đã kết thúc · báo cáo vẫn được lưu</span>}
