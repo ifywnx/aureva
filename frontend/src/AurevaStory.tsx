@@ -1,4 +1,4 @@
-import {ArrowRight,ArrowUpRight,Check,CheckCircle2,ClipboardCheck,FileCheck2,Fingerprint,HandHeart,Heart,HeartHandshake,ShieldCheck,Sparkles,Wallet} from 'lucide-react';
+import {ArrowRight,ArrowUpRight,CheckCircle2,ClipboardCheck,FileCheck2,Fingerprint,HandHeart,Heart,HeartHandshake,ShieldCheck,Sparkles,Wallet} from 'lucide-react';
 import {motion,useReducedMotion} from 'framer-motion';
 
 type Metrics={raised:number;spent:number;contribution_count:number;campaigns:{id:string}[]};
