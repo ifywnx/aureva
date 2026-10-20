@@ -78,7 +78,7 @@ export function ChainActions({id,state,onRefresh,editable}:{id:string;state:Atte
  }
  const confirmed=state.status==='confirmed';
  return <div className="chain-panel chain-v3">
-  <div className="chain-v3-header"><div className="chain-v3-emblem"><Fingerprint size={20}/></div><div><strong>Minh chứng Blockchain</strong><small>Ký bằng MetaMask, máy chủ kiểm tra dữ liệu thực trên Sepolia</small></div><span className={'badge '+(confirmed?'confirmed':'pending')}>{confirmed?<CheckCircle2 size={13}/>:<ShieldCheck size={13}/>} {chainStates[state.status]??state.status}</span></div>
+  <div className="chain-v3-header"><div className="chain-v3-emblem"><Fingerprint size={20}/></div><div><strong>Minh chứng Blockchain</strong><small>MetaMask ký và ghi mã SHA-256 lên Sepolia; không nhận tiền quyên góp, không chuyển ETH cho chiến dịch.</small></div><span className={'badge '+(confirmed?'confirmed':'pending')}>{confirmed?<CheckCircle2 size={13}/>:<ShieldCheck size={13}/>} {chainStates[state.status]??state.status}</span></div>
   <div className="chain-v3-content">
    <div><small>Mã băm dữ liệu (SHA-256)</small><code className="hash">{state.digest}</code></div>
    {state.tx_hash&&<div><small>Giao dịch Sepolia</small><code className="hash">{state.tx_hash}</code></div>}
@@ -89,7 +89,7 @@ export function ChainActions({id,state,onRefresh,editable}:{id:string;state:Atte
    {state.tx_hash&&<a href={'https://sepolia.etherscan.io/tx/'+state.tx_hash} target="_blank" rel="noreferrer">Kiểm tra trên Etherscan <ExternalLink size={14}/></a>}
    {localTx&&!state.tx_hash&&<a href={'https://sepolia.etherscan.io/tx/'+localTx} target="_blank" rel="noreferrer">Xem TX vừa gửi <ExternalLink size={14}/></a>}
    <button disabled={verifyBusy} className="btn light" onClick={verifyOnChain}><ShieldCheck size={15}/>{verifyBusy?'Đang xác minh…':'Xác minh trực tiếp'}</button>
-   {editable&&state.status==='pending'&&!localTx&&<button disabled={busy} className="btn light" onClick={signWithWallet}>{busy?'Đang xử lý…':'Ghi dấu qua MetaMask'}</button>}
+   {editable&&state.status==='pending'&&!localTx&&<button disabled={busy} className="btn light" onClick={signWithWallet}>{busy?'Đang xử lý…':'Ký và ghi hash lên Sepolia'}</button>}
    {editable&&localTx&&!state.tx_hash&&<button disabled={busy} className="btn light" onClick={async()=>{setBusy(true);setError('');try{await sync(localTx)}catch(e){setError((e as Error).message)}finally{setBusy(false)}}}>Đồng bộ TX đã gửi</button>}
    {editable&&(['signed','submitted'].includes(state.status))&&<button disabled={busy} className="btn light" onClick={()=>act('refresh')}>{busy?'Đang kiểm tra…':'Kiểm tra xác nhận'}</button>}
   </div>
@@ -133,7 +133,8 @@ export function EvidencePanel({id,status,document,manager,onRefresh,attestation,
    </div>}
    {document.warnings.length>0?<div className="warnings warnings-v3"><div><ShieldAlert size={18}/><b>{document.warnings.length} điểm cần người có thẩm quyền xác minh</b></div><ul>{document.warnings.map((w,i)=><li key={i}>{w}</li>)}</ul></div>:analyzed&&<div className="ai-safe"><CheckCircle2 size={17}/> Chưa phát hiện chênh lệch theo quy tắc hiện tại. Điều này không chứng minh hóa đơn là thật.</div>}
    {document.ai_error&&<p role="alert" className="alert error">{document.ai_error}</p>}
-   {status==='pending'&&!analyzed&&<div className="ai-action"><p className="muted"><LockKeyhole size={15}/> Nội dung chứng từ sẽ được gửi tới OpenAI API khi bạn bấm phân tích. Hãy che thông tin cá nhân không cần thiết.</p><button disabled={busy||document.ai_status==='processing'} className="btn primary" onClick={()=>execute(()=>request('/expenses/'+id+'/analyze'))}><ScanText size={16}/>{busy?'Đang phân tích…':document.ai_status==='processing'?'Đang xử lý':'Phân tích bằng OpenAI'}</button></div>}
+   {status==='pending'&&!analyzed&&!manager&&<p className="muted"><LockKeyhole size={15}/> Đang đợi người phụ trách hoàn tất phân tích AI; người phê duyệt chỉ xem kết quả và quyết định.</p>}
+   {status==='pending'&&!analyzed&&manager&&<div className="ai-action"><p className="muted"><LockKeyhole size={15}/> Nội dung chứng từ sẽ được gửi tới OpenAI API khi bạn bấm phân tích. Hãy che thông tin cá nhân không cần thiết.</p><button disabled={busy||document.ai_status==='processing'} className="btn primary" onClick={()=>execute(()=>request('/expenses/'+id+'/analyze'))}><ScanText size={16}/>{busy?'Đang phân tích…':document.ai_status==='processing'?'Đang xử lý':'Phân tích bằng OpenAI'}</button></div>}
   </>}
   {error&&<p role="alert" className="alert error">{error}</p>}
   {attestation&&<ChainActions id={id} state={attestation} onRefresh={onRefresh} editable/>}
