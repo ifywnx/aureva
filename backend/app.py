@@ -144,6 +144,8 @@ class ExpenseInput(Input):
     amount: int = Field(strict=True,gt=0,le=1_000_000_000_000)
     purpose: str = Field(min_length=5,max_length=1000)
     vendor: str = Field(min_length=2,max_length=200)
+class DonationRejection(Input):
+    reason: str = Field(min_length=5,max_length=1000)
 class Decision(Input):
     status: Literal['approved','rejected']
     reason: str = Field(min_length=5,max_length=1000)
@@ -289,6 +291,20 @@ def confirm_donation(id:str,user=Depends(current_user)):
         db.execute("UPDATE donations SET status='confirmed' WHERE id=?",(id,))
         audit(db,user,'donation.confirmed',id,{'amount':row['amount']})
     return {'ok':True}
+
+@app.post('/api/donations/{id}/reject')
+def reject_donation(id:str,payload:DonationRejection,user=Depends(current_user)):
+    """Manual reconciliation can decline an unsupported transfer claim."""
+    require(user,'manager')
+    with connect(write=True) as db:
+        row=db.execute('SELECT * FROM donations WHERE id=?',(id,)).fetchone()
+        if not row: raise HTTPException(404,'Không tìm thấy khoản đóng góp.')
+        campaign_access(db,row['campaign_id'],user)
+        if row['status']!='pending':
+            raise HTTPException(409,'Khoản đóng góp đã được xử lý, không thể từ chối lại.')
+        db.execute("UPDATE donations SET status='rejected' WHERE id=?",(id,))
+        audit(db,user,'donation.rejected',id,{'reason':payload.reason})
+    return {'id':id,'status':'rejected'}
 
 @app.post('/api/campaigns/{id}/expenses',status_code=201)
 def expense(id:str,payload:ExpenseInput,user=Depends(current_user)):
