@@ -389,3 +389,91 @@ body{background:var(--v5-paper);color:var(--v5-text);font-family:'Be Vietnam Pro
  .v5-hero-photo>img{transition:none!important}
  .v5-hero-photo:hover>img{transform:none}
 }
+
+
+/* V5.1 — distinctive brand and balanced actions (not blue-on-blue everywhere)
+   Blue is the trust system; navy is the account action; apricot is the public CTA.
+   Semantic successes and risk signals retain their accessibility meanings. */
+:root{
+  --v5-action-warm:#FFC783;
+  --v5-action-hover:#FFD59E;
+  --v5-brand-navy:#0D3472;
+}
+.identity-shell .site-header .brand-monogram{
+ background:linear-gradient(150deg,#123E86 0%,#155EEF 85%);
+ border:1px solid #9ED4FF6E;
+ color:#FFF;
+ box-shadow:0 8px 20px #0A449B35;
+ transform:rotate(-3deg);
+ transition:transform .3s ease,box-shadow .3s ease;
+}
+.identity-shell .site-header .brand-original:hover .brand-monogram{
+ transform:rotate(0) translateY(-2px);
+ box-shadow:0 10px 26px #1453BF48;
+}
+.identity-shell .site-header .brand-monogram svg circle:first-of-type{fill:#FFD18B}
+.identity-shell .site-header .brand-monogram svg path:last-of-type{opacity:.76}
+.identity-shell .site-header .brand-wordmark{color:#12356E}
+.identity-shell .site-header .brand-wordmark small{color:#7087A6;font-size:8.5px;letter-spacing:0;line-height:1.25}
+.identity-shell .site-header .account-login{
+ background:#0B2B54;
+ border-color:#0B2B54;
+ color:#FFF;
+ box-shadow:0 6px 14px #102D6026;
+}
+.identity-shell .site-header .account-login:hover{
+ background:#184781;border-color:#184781;
+}
+.identity-shell .v5-hero .v5-hero-actions .btn.primary{
+ background:var(--v5-action-warm);
+ border-color:var(--v5-action-warm);
+ color:#12345D;
+ box-shadow:0 10px 25px #EAA96542;
+ font-weight:800;
+}
+.identity-shell .v5-hero .v5-hero-actions .btn.primary:hover{
+ background:var(--v5-action-hover);
+ border-color:var(--v5-action-hover);
+ color:#092D59;
+ box-shadow:0 13px 30px #E5A66A57;
+}
+.identity-shell .v5-hero .v5-hero-actions .btn.primary svg{transition:transform .24s ease}
+.identity-shell .v5-hero .v5-hero-actions .btn.primary:hover svg{transform:translate(2px,-2px)}
+.identity-shell .v5-hero .v5-hero-actions .v5-button-outline{
+ background:#FFF;
+ border:1px solid #C6DCFB;
+ color:#22589B;
+ box-shadow:0 8px 22px #2058AB0A;
+}
+.identity-shell .v5-hero .v5-hero-actions .v5-button-outline:hover{
+ background:#EAF4FF;border-color:#A8CAFB;color:#174A9E;
+}
+/* Make functional hierarchy obvious instead of making every control a blue rectangle. */
+.identity-shell .v5-campaign-section .campaign .btn.full{font-weight:800;background:#F7FAFF}
+.identity-shell .v5-campaign-section .campaign:hover .btn.full{background:#EAF4FF}
+.identity-shell .v5-tech-link{color:#A4E7FF}
+.identity-shell .v5-human-link{color:#0D56B1}
+.identity-shell .transparency-ethos .btn.story-outline{background:#FFFFFF16}
+.identity-shell .transparency-ethos .btn.story-outline:hover{background:#FFFFFF2A}
+/* Soft separations let flagship content breathe. */
+.identity-shell .v5-statband{margin-bottom:61px}
+.identity-shell .v5-campaign-section{margin-top:24px}
+.identity-shell .v5-tech-section{margin-top:70px}
+.identity-shell .v5-campaign-section .section-head .eyebrow{color:#397AB6}
+.identity-shell .v5-human-section{margin-top:68px}
+@media(max-width:680px){
+ .identity-shell .site-header .brand-wordmark small{max-width:182px;white-space:normal;font-size:7.5px}
+ .identity-shell .v5-hero .v5-hero-actions{display:grid;grid-template-columns:1fr;gap:10px;width:100%;align-items:stretch}
+ .identity-shell .v5-hero .v5-hero-actions .btn{
+   display:flex;align-items:center;justify-content:center;width:100%;
+   min-height:48px;font-size:11px;padding:12px 14px;
+ }
+ .identity-shell .v5-statband{margin-bottom:34px}
+ .identity-shell .v5-tech-section{margin-top:39px}
+ .identity-shell .v5-human-section{margin-top:40px}
+ .identity-shell .v5-campaign-section{margin-top:27px}
+}
+@media(prefers-reduced-motion:reduce){
+ .identity-shell .site-header .brand-monogram,
+ .identity-shell .v5-hero .v5-hero-actions .btn.primary svg{transition:none}
+}
