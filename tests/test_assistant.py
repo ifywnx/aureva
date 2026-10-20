@@ -106,7 +106,7 @@ def test_assistant_provider_does_not_leak_key_on_error(env, monkeypatch):
         httpx.Response(401, json={'error': {'message': 'Invalid unit-test-SECRET-123'}}))
     web = TestClient(backend.app, headers={'X-Aureva-Request': '1'})
     resp = web.post(PATH, json={'message': 'Minh bạch là gì?'})
-    assert resp.status_code == 502
+    assert resp.status_code == 503
     assert 'unit-test-SECRET-123' not in resp.text
 
 
