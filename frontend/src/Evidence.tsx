@@ -1,7 +1,7 @@
 import {type FormEvent,useEffect,useState} from 'react';
 import {AlertTriangle,ArrowDownToLine,ArrowUpRight,CheckCircle2,ClipboardCheck,CloudUpload,ExternalLink,FileCheck2,FileImage,FileText,Fingerprint,LockKeyhole,ScanText,ShieldCheck,ShieldAlert,X} from 'lucide-react';
 
-export type DocumentInfo={id:string;sha256:string;filename:string;ai_status:string;ai_error:string|null;model:string|null;invoice:{vendor:string|null;invoice_number:string|null;total:number|null;currency:string|null;notes:string}|null;warnings:string[]};
+export type DocumentInfo={id:string;sha256:string;filename:string;mime:string;ai_status:string;ai_error:string|null;model:string|null;invoice:{vendor:string|null;invoice_number:string|null;total:number|null;currency:string|null;notes:string}|null;warnings:string[]};
 export type Attestation={digest:string;status:string;tx_hash:string|null};
 export type ReportInfo={id:string;created:string;pdf_hash:string;digest:string;status:string;tx_hash:string|null};
 const money=(v:number)=>new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(v);
