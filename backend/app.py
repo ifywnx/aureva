@@ -184,7 +184,7 @@ LEFT JOIN campaign_covers cover ON cover.campaign_id=c.id'''
 def dashboard():
     with connect() as db:
         campaigns=[dict(r) for r in db.execute(CAMPAIGN_SQL+' ORDER BY c.created DESC')]
-    return {'campaigns':campaigns,'raised':sum(c['raised'] for c in campaigns),'spent':sum(c['spent'] for c in campaigns),'contribution_count':sum(c['contribution_count'] for c in campaigns),'integrations':{'ai':'configured' if os.getenv('GEMINI_API_KEY') and os.getenv('GEMINI_MODEL') else 'not_configured','blockchain':'configured' if all(os.getenv(k) for k in ('SEPOLIA_RPC_URL','BLOCKCHAIN_PRIVATE_KEY','AUREVA_CONTRACT_ADDRESS')) else 'not_configured'}}
+    return {'campaigns':campaigns,'raised':sum(c['raised'] for c in campaigns),'spent':sum(c['spent'] for c in campaigns),'contribution_count':sum(c['contribution_count'] for c in campaigns),'integrations':{'ai':'configured' if os.getenv('OPENAI_API_KEY') else 'not_configured','blockchain':'configured' if all(os.getenv(k) for k in ('SEPOLIA_RPC_URL','BLOCKCHAIN_PRIVATE_KEY','AUREVA_CONTRACT_ADDRESS')) else 'not_configured'}}
 
 @app.post('/api/campaigns',status_code=201)
 def create_campaign(payload: CampaignInput,user=Depends(current_user)):
@@ -280,7 +280,7 @@ def decide(id:str,payload:Decision,user=Depends(current_user)):
 @app.get('/api/health')
 def health():
     with connect() as db: db.execute('SELECT 1')
-    return {'status':'ok','database':'postgresql' if os.getenv('DATABASE_URL') and not os.getenv('AUREVA_DB') else 'sqlite','ai':'configured' if os.getenv('GEMINI_API_KEY') and os.getenv('GEMINI_MODEL') else 'not_configured','blockchain':'configured' if all(os.getenv(k) for k in ('SEPOLIA_RPC_URL','BLOCKCHAIN_PRIVATE_KEY','AUREVA_CONTRACT_ADDRESS')) else 'not_configured'}
+    return {'status':'ok','database':'postgresql' if os.getenv('DATABASE_URL') and not os.getenv('AUREVA_DB') else 'sqlite','ai':'configured' if os.getenv('OPENAI_API_KEY') else 'not_configured','blockchain':'configured' if all(os.getenv(k) for k in ('SEPOLIA_RPC_URL','BLOCKCHAIN_PRIVATE_KEY','AUREVA_CONTRACT_ADDRESS')) else 'not_configured'}
 
 from backend.evidence import register as register_evidence
 register_evidence(app)
