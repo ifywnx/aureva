@@ -1,10 +1,10 @@
 import {ArrowRight, ArrowUpRight, BrainCircuit, CheckCircle2, ClipboardCheck, FileCheck2, Fingerprint, HandHeart, HeartHandshake, ShieldCheck, Sparkles, Waves, Wallet, Zap} from 'lucide-react';
 import {motion,useReducedMotion} from 'framer-motion';
 import {ProofOrbit} from './ProofOrbit';
+import {HeroSlideshow} from './HeroSlideshow';
 
 type Metrics={raised:number;spent:number;contribution_count:number;campaigns:{id:string}[];integrations?:{ai:string;blockchain:string}};
 const fmt=(n:number)=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:0}).format(n);
-const vietnamRelief='https://images.pexels.com/photos/32799179/pexels-photo-32799179.jpeg?auto=compress&cs=tinysrgb&w=1400&h=1600&fit=crop';
 const vietnamFlood='https://images.pexels.com/photos/34959205/pexels-photo-34959205.jpeg?auto=compress&cs=tinysrgb&w=1400';
 
 export function AurevaMark({size=35}:{size?:number}){
@@ -34,16 +34,7 @@ export function PublicIntro({data,dataUnavailable,onExplore,onTransparency}:{dat
     </div>
     <div className="v5-hero-checks"><span><CheckCircle2 size={16}/> Số liệu từ hệ thống</span><span><ShieldCheck size={16}/> Phân quyền và đối soát</span></div>
    </div>
-   <div className="v5-hero-photo">
-     <img src={vietnamRelief} alt="Tình nguyện viên giúp người cao tuổi mang nhu yếu phẩm tại Bình Phước, Việt Nam" loading="eager" fetchPriority="high"/>
-     <div className="v5-photo-shimmer" aria-hidden="true"/>
-     <div className="v5-photo-country"><span>VIETNAM · HUMAN STORIES</span><strong>Lan tỏa điều tử tế.</strong></div>
-     <div className="v5-photo-glass">
-       <div><span className="v5-glass-icon"><HeartHandshake size={18}/></span><span>Trao gửi yêu thương<small>Niềm tin được xây từ minh bạch</small></span></div>
-       <span className="v5-glass-mark"><CheckCircle2 size={20}/></span>
-     </div>
-     <small className="v5-photo-credit">Ảnh thực tế tại Bình Phước · Duy Nguyen / Pexels · ảnh minh họa, không phải chiến dịch AUREVA</small>
-   </div>
+   <div className="v5-hero-photo"><HeroSlideshow/></div>
    <div className="v5-hero-decor v5-decor-a" aria-hidden="true"/><div className="v5-hero-decor v5-decor-b" aria-hidden="true"/>
   </section>
   <div className="v5-statband" aria-label="Các chỉ số công khai">
