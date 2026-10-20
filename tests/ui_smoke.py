@@ -192,6 +192,9 @@ def run():
                     demonstration.goto(BASE,wait_until="networkidle")
                     expect(demonstration.get_by_role("button",name="Đăng nhập",exact=True)).to_be_visible()
                     expect(demonstration.get_by_role("button",name="Đổi sang tài khoản demo Người phụ trách")).to_be_visible()
+                    assert demonstration.locator(".aureva-demo-bar").evaluate(
+                        "(el)=>{const r=el.getBoundingClientRect();return r.width<680 && r.height<105 && r.left>=0 && r.top>=0}"
+                    ), "Demo toolbar must be compact, not a 246px-wide full-height sidebar"
                     demonstration.get_by_role("button",name="Đổi sang tài khoản demo Người phụ trách").click()
                     expect(demonstration.locator("header .site-user strong")).to_have_text("DEMO · manager")
                     expect(demonstration.get_by_role("heading",name="Bảng điều hành cứu trợ")).to_be_visible()
