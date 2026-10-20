@@ -306,4 +306,8 @@ if dist.exists():
     @app.get('/{path:path}')
     def frontend(path:str):
         if path.startswith('api/'): raise HTTPException(404,'Not found')
+        # Only reviewed public static artifacts may be served by the API process.
+        # No user-controlled filesystem paths or private configuration files.
+        if path in ('deploy-sepolia.html','aureva-registry-artifact.json'):
+            return FileResponse(dist/path, media_type='text/html' if path.endswith('.html') else 'application/json')
         return FileResponse(dist/'index.html')
