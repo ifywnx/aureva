@@ -92,6 +92,9 @@ def run():
                     chat.get_by_role("button",name="Hiện có chiến dịch cứu trợ nào?").click()
                     expect(chat.get_by_text("Dữ liệu thật từ bảng công khai, không tự suy đoán.")).to_be_visible(timeout=15000)
                     expect(chat.get_by_text("Đã đọc dữ liệu công khai")).to_be_visible()
+                    bubble_size=chat.locator(".aureva-chat-bubble").first.evaluate(
+                        "(el)=>parseFloat(getComputedStyle(el).fontSize)")
+                    assert bubble_size>=12, f"AI assistant text too small: {bubble_size}px"
                     chat.get_by_role("button",name="Thu nhỏ trợ lý").click()
                     expect(chat).to_have_count(0)
                     expect(page.get_by_role("heading",name="Lòng tốt xứng đáng được đặt đúng niềm tin.")).to_be_visible()
@@ -105,6 +108,28 @@ def run():
                     page.get_by_role("button",name="Bước 01: Tạo chiến dịch").click()
 
                     expect(page.get_by_role("heading",name="Trao đi yêu thương. Rõ từng đóng góp.")).to_be_visible()
+                    # Regression: old layers mixed DM Sans / Manrope / Newsreader.
+                    # The current brand and Vietnamese UI must render with one family.
+                    sample_selectors=[
+                        ".brand-wordmark", ".brand-wordmark small",
+                        ".site-nav button", ".site-user strong",
+                        ".v5-hero h1", ".v5-hero h1 em",
+                        ".journey-flow-heading h2", ".journey-step strong",
+                        ".v5-stat strong", ".aureva-chat-toggle-copy strong",
+                    ]
+                    for selector in sample_selectors:
+                        element=page.locator(selector).first
+                        if element.count()==0:
+                            # account label exists only after sign-in
+                            assert selector==".site-user strong", f"Missing typography sample: {selector}"
+                            continue
+                        family=element.evaluate("(el)=>getComputedStyle(el).fontFamily").lower()
+                        assert "be vietnam pro" in family, f"{selector} font mismatch: {family}"
+                        assert not any(old in family for old in ("manrope","dm sans","newsreader")), (
+                            f"{selector} still includes old legacy fonts: {family}"
+                        )
+                    nav_size=page.locator(".site-nav button").first.evaluate("(el)=>parseFloat(getComputedStyle(el).fontSize)")
+                    assert nav_size>=11.0, f"Navigation font too small: {nav_size}px"
                     # Real Vietnam imagery rotates; active photo credits follow their scene.
                     photo=page.locator(".v5-hero-photo")
                     expect(photo.locator(".v5-hero-slide")).to_have_count(1)
@@ -207,6 +232,10 @@ def run():
                     demonstration.goto(BASE,wait_until="networkidle")
                     expect(demonstration.get_by_role("button",name="Đăng nhập",exact=True)).to_be_visible()
                     expect(demonstration.get_by_role("button",name="Đổi sang tài khoản demo Người phụ trách")).to_be_visible()
+                    demo_family=demonstration.locator(".aureva-demo-role").first.evaluate("(el)=>getComputedStyle(el).fontFamily").lower()
+                    assert "be vietnam pro" in demo_family and "manrope" not in demo_family, (
+                        f"Demo bar still has mismatched typography: {demo_family}"
+                    )
                     assert demonstration.locator(".aureva-demo-bar").evaluate(
                         "(el)=>{const r=el.getBoundingClientRect();return r.width<680 && r.height<105 && r.left>=0 && r.top>=0}"
                     ), "Demo toolbar must be compact, not a 246px-wide full-height sidebar"
