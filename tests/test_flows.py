@@ -145,3 +145,18 @@ def test_manager_can_reject_unverified_donation_without_inflating_ledger(env):
     assert 'Không tìm thấy giao dịch' in history['detail']
     # Closing a campaign remains possible after its outstanding claim is rejected.
     assert m.post(f'/api/campaigns/{cid}/close',json={}).status_code==200
+
+
+def test_approver_does_not_receive_private_donation_references(env):
+    m,d,p=client('manager'),client('donor'),client('approver')
+    cid=campaign(m)
+    secret_ref='DONOR-PRIVATE-BANK-REF'
+    item=d.post(f'/api/campaigns/{cid}/donations',json={'amount':75000,'reference':secret_ref})
+    assert item.status_code==201
+    approver_response=p.get('/api/workspace')
+    assert approver_response.status_code==200
+    assert approver_response.json()['donations']==[]
+    assert secret_ref not in approver_response.text
+    manager_response=m.get('/api/workspace')
+    assert manager_response.status_code==200
+    assert secret_ref in manager_response.text
