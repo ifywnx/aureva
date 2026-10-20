@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState,type TouchEvent} from 'react';
 import {AnimatePresence,motion,useReducedMotion} from 'framer-motion';
 import {CheckCircle2,ChevronLeft,ChevronRight,HeartHandshake,Pause,Play} from 'lucide-react';
+import './HeroSlideshow.css';
 
 const slides=[
   {
