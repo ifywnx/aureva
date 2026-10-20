@@ -105,6 +105,21 @@ def run():
                     page.get_by_role("button",name="Bước 01: Tạo chiến dịch").click()
 
                     expect(page.get_by_role("heading",name="Trao đi yêu thương. Rõ từng đóng góp.")).to_be_visible()
+                    # Real Vietnam imagery rotates; active photo credits follow their scene.
+                    photo=page.locator(".v5-hero-photo")
+                    expect(photo.locator(".v5-hero-slide")).to_have_count(1)
+                    expect(photo.locator(".v5-photo-country strong")).to_have_text("Trao đi sự tử tế.")
+                    expect(photo.get_by_text("Duy Nguyen / Pexels",exact=False)).to_be_visible()
+                    photo.get_by_role("button",name="Ảnh tiếp theo").click()
+                    expect(photo.locator(".v5-photo-country strong")).to_have_text("Gắn kết cộng đồng.")
+                    expect(photo.get_by_text("Ninh Tien Dat / Pexels",exact=False)).to_be_visible()
+                    photo.get_by_role("button",name="Chọn ảnh 3: Từ những hành động nhỏ.").click()
+                    expect(photo.locator(".v5-photo-country strong")).to_have_text("Từ những hành động nhỏ.")
+                    photo.get_by_role("button",name="Tạm dừng tự chuyển ảnh").click()
+                    expect(photo.get_by_role("button",name="Tiếp tục tự chuyển ảnh")).to_be_visible()
+                    photo.get_by_role("button",name="Ảnh trước").click()
+                    expect(photo.locator(".v5-photo-country strong")).to_have_text("Gắn kết cộng đồng.")
+                    assert "không thuộc chiến dịch AUREVA" in photo.locator(".v5-photo-credit").inner_text()
                     primary_color=page.locator(".v5-hero-actions .btn.primary").evaluate("(el)=>getComputedStyle(el).backgroundColor")
                     assert primary_color=="rgb(255, 199, 131)", f"Primary CTA must use warm accent, got {primary_color}"
                     assert page.evaluate("""() => {
@@ -227,6 +242,12 @@ def run():
                     mobile_chat.get_by_role("button",name="Thu nhỏ trợ lý").click()
                     expect(mobile.locator(".hero")).to_be_visible()
                     expect(mobile.locator(".v5-hero-photo")).to_be_visible()
+                    photo_mobile=mobile.locator(".v5-hero-photo")
+                    assert photo_mobile.get_by_role("button",name="Ảnh tiếp theo").evaluate(
+                        "(el)=>el.getBoundingClientRect().right <= window.innerWidth + 2"
+                    ), "Hero carousel controls must fit within the mobile viewport"
+                    photo_mobile.get_by_role("button",name="Ảnh tiếp theo").click()
+                    expect(photo_mobile.locator(".v5-photo-country strong")).to_have_text("Gắn kết cộng đồng.")
                     expect(mobile.locator(".journey-flow")).to_be_visible()
                     mobile.get_by_role("button",name="Bước 06: Công khai & xác thực").click()
                     expect(mobile.locator(".journey-focus h3")).to_have_text("Công khai & xác thực")
