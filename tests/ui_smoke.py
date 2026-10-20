@@ -10,6 +10,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))  # Invoked as tests/ui_smoke.py from the repository root.
 BASE = "http://127.0.0.1:8001"
 PASSWORD = "test-password-123"
 
