@@ -70,3 +70,34 @@ def test_preview_connection_confirms_role_and_schema(monkeypatch, preview):
         holder["connection"] = connection
         with pytest.raises(RuntimeError):
             inspect_live_preview()
+
+
+def test_postgres_qmark_conversion_preserves_literal_url_and_quotes():
+    from backend.app import CAMPAIGN_SQL
+    from backend.postgres import bind_sqlite_parameters, Connection
+
+    converted = bind_sqlite_parameters(CAMPAIGN_SQL + " WHERE c.id=?")
+    assert "'/cover?v='" in converted, "Cover URL's question mark must stay literal"
+    assert converted.count("%s") == 1
+    assert converted.endswith("WHERE c.id=%s")
+    assert bind_sqlite_parameters(
+        """SELECT '?' AS a, 'it''s ? safe' AS b, \"?\" AS key
+           FROM campaigns -- comment ?
+           WHERE c=? /* ? fake */ AND owner_id=?"""
+    ).count("%s") == 2
+
+    class FakeCursor:
+        def fetchone(self): return {"ok": True}
+
+    class FakeConn:
+        def __init__(self): self.sql = None; self.args = None
+        def execute(self, sql, args):
+            self.sql, self.args = sql, args
+            return FakeCursor()
+
+    conn = Connection.__new__(Connection)
+    conn.conn = FakeConn()
+    conn.execute(CAMPAIGN_SQL + " WHERE c.id=?", ("preview-test",))
+    assert conn.conn.sql.endswith("WHERE c.id=%s")
+    assert "'/cover?v='" in conn.conn.sql
+    assert conn.conn.args == ("preview-test",)
