@@ -81,6 +81,15 @@ def run():
                     Path("work").mkdir(exist_ok=True)
                     page.screenshot(path="work/aureva-desktop.png",full_page=True)
                     expect(page.get_by_role("heading",name="Lòng tốt xứng đáng được đặt đúng niềm tin.")).to_be_visible()
+                    expect(page.get_by_role("heading",name="Một hành động tử tế. Một hành trình rõ ràng.")).to_be_visible()
+                    assert page.locator(".journey-step").count()==6, "Expected six connected business stages"
+                    page.get_by_role("button",name="Bước 04: AI kiểm tra").click()
+                    expect(page.locator(".journey-focus h3")).to_have_text("AI kiểm tra")
+                    expect(page.locator(".journey-focus .journey-proof-content")).to_contain_text("Mô tả nghiệp vụ")
+                    page.get_by_role("button",name="Bước tiếp theo").click()
+                    expect(page.locator(".journey-focus h3")).to_have_text("Duyệt hoặc từ chối")
+                    page.get_by_role("button",name="Bước 01: Tạo chiến dịch").click()
+
                     expect(page.get_by_role("heading",name="Trao đi yêu thương. Rõ từng đóng góp.")).to_be_visible()
                     primary_color=page.locator(".v5-hero-actions .btn.primary").evaluate("(el)=>getComputedStyle(el).backgroundColor")
                     assert primary_color=="rgb(255, 199, 131)", f"Primary CTA must use warm accent, got {primary_color}"
@@ -123,6 +132,11 @@ def run():
                     mobile.goto(BASE,wait_until="networkidle")
                     expect(mobile.locator(".hero")).to_be_visible()
                     expect(mobile.locator(".v5-hero-photo")).to_be_visible()
+                    expect(mobile.locator(".journey-flow")).to_be_visible()
+                    mobile.get_by_role("button",name="Bước 06: Công khai & xác thực").click()
+                    expect(mobile.locator(".journey-focus h3")).to_have_text("Công khai & xác thực")
+                    assert mobile.locator(".journey-line").evaluate("(el)=>el.scrollWidth>el.clientWidth"), "Mobile journey should be swipeable"
+
                     assert mobile.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 2"), "Homepage has horizontal overflow"
                     mobile.screenshot(path="work/aureva-mobile.png",full_page=True)
                     assert mobile.locator(".v5-hero-actions .btn").count()==2
