@@ -13,20 +13,69 @@ async function request(path:string,body:unknown={}){
  return data;
 }
 const chainStates:Record<string,string>={pending:'Chưa ghi chuỗi',signed:'Đã ký, chờ gửi',submitted:'Chờ xác nhận trên Sepolia',confirmed:'Đã xác nhận trên Sepolia',failed:'Giao dịch thất bại'};
+type WalletProvider={
+ request(input:{method:string;params?:unknown[]}):Promise<unknown>;
+};
+function walletProvider():WalletProvider|null{
+ return (window as Window & {ethereum?:WalletProvider}).ethereum??null;
+}
+type PrepareWallet={chain_id:number;contract:string;owner:string;digest:string;data:string};
 export function ChainActions({id,state,onRefresh,editable}:{id:string;state:Attestation|ReportInfo;onRefresh:()=>Promise<void>;editable:boolean}){
- const[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const[busy,setBusy]=useState(false),[error,setError]=useState(''),[localTx,setLocalTx]=useState('');
  async function act(action:string){setBusy(true);setError('');try{await request('/attestations/'+id+'/'+action);await onRefresh()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
+ async function sync(tx:string){
+   if(!/^0x[0-9a-fA-F]{64}$/.test(tx))throw Error('TX hash không hợp lệ.');
+   await request('/attestations/'+id+'/submit-wallet',{tx_hash:tx});
+   setLocalTx('');
+   await onRefresh();
+ }
+ async function signWithWallet(){
+  setBusy(true);setError('');
+  try{
+   const provider=walletProvider();
+   if(!provider)throw Error('Chưa tìm thấy MetaMask. Mở trang bằng trình duyệt có MetaMask.');
+   const prepared=await request('/attestations/'+id+'/prepare-wallet') as PrepareWallet;
+   if(prepared.chain_id!==11155111||!/^0x[0-9a-fA-F]{40}$/.test(prepared.contract)||!/^0x[0-9a-fA-F]{64}$/.test(prepared.digest))
+    throw Error('Dữ liệu giao dịch hợp đồng không hợp lệ.');
+   const accounts=await provider.request({method:'eth_requestAccounts'});
+   const account=Array.isArray(accounts)?String(accounts[0]??''):'';
+   if(!account||account.toLowerCase()!==prepared.owner.toLowerCase())
+    throw Error('MetaMask đang chọn ví không phải chủ hợp đồng. Chọn đúng ví đã deploy AUREVA.');
+   const chain=await provider.request({method:'eth_chainId'});
+   if(chain!=='0xaa36a7'){
+    await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:'0xaa36a7'}]});
+   }
+   const confirmedChain=await provider.request({method:'eth_chainId'});
+   if(confirmedChain!=='0xaa36a7')throw Error('MetaMask chưa chuyển sang mạng Sepolia.');
+   const tx=await provider.request({method:'eth_sendTransaction',params:[{
+      from:account,to:prepared.contract,data:prepared.data,value:'0x0'
+   }]});
+   const hash=String(tx??'');
+   if(!/^0x[0-9a-fA-F]{64}$/.test(hash))throw Error('MetaMask chưa trả về TX hash hợp lệ.');
+   setLocalTx(hash);
+   try{await sync(hash)}
+   catch{
+    setError('Đã gửi giao dịch lên Sepolia nhưng máy chủ chưa nhìn thấy TX. Không bấm ký lần nữa; hãy bấm Đồng bộ TX bên dưới.');
+   }
+  }catch(e){
+    setError(e instanceof Error?e.message:'Không thể xác nhận giao dịch.');
+  }finally{setBusy(false)}
+ }
  const confirmed=state.status==='confirmed';
  return <div className="chain-panel chain-v3">
-  <div className="chain-v3-header"><div className="chain-v3-emblem"><Fingerprint size={20}/></div><div><strong>Minh chứng Blockchain</strong><small>Chỉ xác nhận khi có bằng chứng giao dịch thực</small></div><span className={'badge '+(confirmed?'confirmed':'pending')}>{confirmed?<CheckCircle2 size={13}/>:<ShieldCheck size={13}/>} {chainStates[state.status]??state.status}</span></div>
+  <div className="chain-v3-header"><div className="chain-v3-emblem"><Fingerprint size={20}/></div><div><strong>Minh chứng Blockchain</strong><small>Ký bằng MetaMask, máy chủ kiểm tra dữ liệu thực trên Sepolia</small></div><span className={'badge '+(confirmed?'confirmed':'pending')}>{confirmed?<CheckCircle2 size={13}/>:<ShieldCheck size={13}/>} {chainStates[state.status]??state.status}</span></div>
   <div className="chain-v3-content">
    <div><small>Mã băm dữ liệu (SHA-256)</small><code className="hash">{state.digest}</code></div>
    {state.tx_hash&&<div><small>Giao dịch Sepolia</small><code className="hash">{state.tx_hash}</code></div>}
+   {localTx&&!state.tx_hash&&<div><small>Giao dịch vừa gửi, chờ đồng bộ</small><code className="hash">{localTx}</code></div>}
   </div>
   <div className="chain-v3-actions">
    <a href={'/api/public/attestations/'+id} target="_blank" rel="noreferrer">Xem dữ liệu xác thực <ArrowUpRight size={14}/></a>
    {state.tx_hash&&<a href={'https://sepolia.etherscan.io/tx/'+state.tx_hash} target="_blank" rel="noreferrer">Kiểm tra trên Etherscan <ExternalLink size={14}/></a>}
-   {editable&&state.status!=='confirmed'&&state.status!=='failed'&&<button disabled={busy} className="btn light" onClick={()=>act(state.status==='submitted'?'refresh':'anchor')}>{busy?'Đang kết nối…':state.status==='submitted'?'Kiểm tra xác nhận':'Ghi dấu lên Sepolia'}</button>}
+   {localTx&&!state.tx_hash&&<a href={'https://sepolia.etherscan.io/tx/'+localTx} target="_blank" rel="noreferrer">Xem TX vừa gửi <ExternalLink size={14}/></a>}
+   {editable&&state.status==='pending'&&!localTx&&<button disabled={busy} className="btn light" onClick={signWithWallet}>{busy?'Đang xử lý…':'Ghi dấu qua MetaMask'}</button>}
+   {editable&&localTx&&!state.tx_hash&&<button disabled={busy} className="btn light" onClick={async()=>{setBusy(true);setError('');try{await sync(localTx)}catch(e){setError((e as Error).message)}finally{setBusy(false)}}}>Đồng bộ TX đã gửi</button>}
+   {editable&&(['signed','submitted'].includes(state.status))&&<button disabled={busy} className="btn light" onClick={()=>act('refresh')}>{busy?'Đang kiểm tra…':'Kiểm tra xác nhận'}</button>}
   </div>
   {error&&<p role="alert" className="alert error">{error}</p>}
  </div>;
