@@ -3,6 +3,58 @@ import os
 from decimal import Decimal
 import psycopg
 from psycopg.rows import dict_row
+def bind_sqlite_parameters(sql: str) -> str:
+    """Replace positional SQLite ? bind markers only outside SQL literals/comments.
+
+    Our public campaign SELECT embeds a literal '/cover?v=' URL. Blindly
+    replacing all '?' turns that URL into a fake psycopg %s placeholder and
+    makes every dashboard request fail even when Postgres is healthy.
+    """
+    out = []
+    i = 0
+    state = "code"
+    while i < len(sql):
+        ch = sql[i]
+        pair = sql[i:i+2]
+        if state == "code":
+            if ch == "'":
+                state = "single"
+            elif ch == '"':
+                state = "double"
+            elif pair == "--":
+                state = "line_comment"
+                out.append(pair)
+                i += 2
+                continue
+            elif pair == "/*":
+                state = "block_comment"
+                out.append(pair)
+                i += 2
+                continue
+            elif ch == "?":
+                out.append("%s")
+                i += 1
+                continue
+        elif state in ("single", "double"):
+            closing = "'" if state == "single" else '"'
+            if ch == closing:
+                if sql[i+1:i+2] == closing:
+                    out.append(ch + closing)
+                    i += 2
+                    continue
+                state = "code"
+        elif state == "line_comment":
+            if ch == "\n":
+                state = "code"
+        elif state == "block_comment" and pair == "*/":
+            out.append(pair)
+            i += 2
+            state = "code"
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
 class Row(dict):
     def __init__(self,row):
         super().__init__((k,int(v) if isinstance(v,Decimal) and v==v.to_integral_value() else v) for k,v in row.items())
@@ -26,7 +78,7 @@ class Connection:
         if write:
             lock_id=724201029 if schema=='aureva_preview' else 724201028
             self.conn.execute('SELECT pg_advisory_xact_lock(%s)',(lock_id,))
-    def execute(self,sql,args=()):return Cursor(self.conn.execute(sql.replace('?','%s'),args))
+    def execute(self,sql,args=()):return Cursor(self.conn.execute(bind_sqlite_parameters(sql),args))
     def commit(self):self.conn.commit()
     def rollback(self):self.conn.rollback()
     def close(self):self.conn.close()
