@@ -10,6 +10,7 @@ import {CampaignCoverEditor} from './CampaignCoverEditor';
 import {ActivityInsights} from './ActivityInsights';
 import {JourneyFlow} from './JourneyFlow';
 import {AurevaChat} from './AurevaChat';
+import {DemoRoleBar,type DemoRole} from './DemoRoleBar';
 import {PublicIntro,HumanStory,TechnologyShowcase,TransparencyHub} from './AurevaStory';
 import './style.css';
 import './identity.css';
@@ -31,16 +32,26 @@ function App(){
  const [reports,setReports]=useState<ReportInfo[]>([]);
  const [dashboardState,setDashboardState]=useState<'loading'|'ready'|'failed'>('loading');
  const [page,setPage]=useState('overview'),[modal,setModal]=useState(''),[selected,setSelected]=useState<Campaign|null>(null),[detail,setDetail]=useState<Detail|null>(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[campaignQuery,setCampaignQuery]=useState('');
- async function refresh(u:User|null=user){
+ const [demoEnabled,setDemoEnabled]=useState(false);
+ async function refresh(u:User|null=user,keepDetail=true){
    try{
      const dashboard=await api<Dashboard>('/public/dashboard');
      setData(dashboard);setDashboardState('ready');
    }catch(e){setDashboardState('failed');throw e;}
-   if(u)setWorkspace(await api('/workspace'));
-   if(selected){setDetail(await api('/public/campaigns/'+selected.id));setReports(await api('/public/campaigns/'+selected.id+'/reports'));}
+   if(u)setWorkspace(await api('/workspace'));else setWorkspace({donations:[],expenses:[]});
+   if(keepDetail&&selected){setDetail(await api('/public/campaigns/'+selected.id));setReports(await api('/public/campaigns/'+selected.id+'/reports'));}
  }
  useEffect(()=>{api<User>('/auth/me').then(u=>{setUser(u);return refresh(u)}).catch(()=>refresh(null).catch(e=>setError(e.message)));},[]);
+ useEffect(()=>{api<{enabled:boolean}>('/demo/status').then(data=>setDemoEnabled(data.enabled===true)).catch(()=>setDemoEnabled(false));},[]);
  async function run(action:()=>Promise<void>){setBusy(true);setError('');setNotice('');try{await action();return true}catch(e){setError(e instanceof Error?e.message:'Không kết nối được máy chủ.');return false}finally{setBusy(false)}}
+ async function switchDemo(role:DemoRole){await run(async()=>{
+   const account=await api<User>('/demo/switch',{role});
+   setUser(account);setSelected(null);setDetail(null);setReports([]);setModal('');
+   await refresh(account,false);
+   setPage(role==='donor'?'campaigns':'workspace');
+   window.scrollTo({top:0,behavior:'auto'});
+   setNotice('Đang sử dụng tài khoản DEMO: '+({donor:'Người đóng góp',manager:'Người quản lý',approver:'Người phê duyệt'}[role])+'. Chỉ dùng dữ liệu thử nghiệm.');
+ });}
  function open(type:string,c?:Campaign){setModal(type);setSelected(c??null);setError('');}
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);const value=(k:string)=>String(f.get(k)||'');const amount=Number(value('amount'));
  const success=await run(async()=>{
@@ -111,6 +122,7 @@ function App(){
  />}
  <footer><b>AUREVA.</b><span>Trao gửi yêu thương, rõ từng đóng góp.</span><span>Đồ án Web Nâng Cao · 2026</span></footer></PageMotion></main></div>
  <AurevaChat/>
+ <DemoRoleBar enabled={demoEnabled} user={user} busy={busy} onSwitch={role=>void switchDemo(role)}/>
  <AnimatePresence>{modal&&<motion.div className="overlay" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:reducedMotion?0:.2}} onClick={()=>!busy&&setModal('')}><motion.section role="dialog" aria-modal="true" aria-labelledby="modal-title" className="modal" initial={reducedMotion?false:{opacity:0,scale:.94,y:18}} animate={{opacity:1,scale:1,y:0}} exit={reducedMotion?{opacity:1}:{opacity:0,scale:.97,y:12}} transition={{type:'spring',stiffness:300,damping:28}} onClick={e=>e.stopPropagation()}><button className="close icon-btn" aria-label="Đóng" disabled={busy} onClick={()=>setModal('')}><X size={20}/></button><div className="eyebrow">AUREVA</div><h2 id="modal-title">{{login:'Chào mừng trở lại',register:'Tham gia đóng góp',campaign:'Tạo chiến dịch cứu trợ',donation:'Ghi nhận đóng góp',expense:'Đề xuất khoản chi'}[modal]}</h2>{error&&<div role="alert" className="alert error">{error}</div>}<form onSubmit={submit}>{modal==='register'&&<Field name="name" label="Họ và tên" minLength={2}/ >}{['login','register'].includes(modal)&&<><Field name="email" label="Email" type="email"/><Field name="password" label="Mật khẩu" type="password" minLength={10}/><p className="muted">{modal==='register'?'Tối thiểu 10 ký tự. Tài khoản mới có quyền người đóng góp.':'Sử dụng tài khoản đã đăng ký hoặc được người quản trị cấp.'}</p></>}{modal==='campaign'&&<><Field name="title" label="Tên chiến dịch" minLength={5}/><Field name="location" label="Địa bàn cứu trợ" minLength={2}/><label>Mô tả<textarea name="description" required minLength={10} maxLength={3000} rows={4}/></label></>}{['campaign','donation','expense'].includes(modal)&&<Field name="amount" label={modal==='campaign'?'Mục tiêu quyên góp (VND)':'Số tiền (VND)'} type="number"/>}{modal==='donation'&&<><Field name="reference" label="Mã tham chiếu chuyển khoản" minLength={3}/><p className="muted">Đây là ghi nhận khoản đóng góp đã chuyển qua kênh của chiến dịch, không thực hiện thanh toán. Tiền chỉ được tính sau khi người phụ trách đối soát.</p></>}{modal==='expense'&&<><Field name="vendor" label="Đơn vị nhận tiền / nhà cung cấp" minLength={2}/><Field name="purpose" label="Nội dung khoản chi" minLength={5}/><p className="muted">Khoản chi sẽ chờ người có thẩm quyền duyệt. Sau khi tạo, hãy tải chứng từ và bấm phân tích AI trong Không gian làm việc.</p></>}<button disabled={busy} className="btn primary full">{busy?'Đang xử lý…':modal==='login'?'Đăng nhập':modal==='register'?'Tạo tài khoản':'Lưu thông tin'}</button></form>{modal==='login'&&<button className="text-btn" onClick={()=>open('register')}>Chưa có tài khoản? Đăng ký đóng góp</button>}{modal==='register'&&<button className="text-btn" onClick={()=>open('login')}>Đã có tài khoản? Đăng nhập</button>}</motion.section></motion.div>}</AnimatePresence></div>
 }
 function Field({name,label,type='text',minLength}:{name:string;label:string;type?:string;minLength?:number}){return <label>{label}<input name={name} type={type} required minLength={minLength} maxLength={type==='password'?128:200} min={type==='number'?1:undefined} max={type==='number'?1000000000000:undefined} step={type==='number'?1:undefined} autoComplete={type==='password'?'current-password':name==='email'?'email':undefined}/></label>}
