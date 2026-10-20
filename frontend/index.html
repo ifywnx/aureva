@@ -11,6 +11,17 @@
     <meta name="color-scheme" content="light"/>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
     <title>AUREVA — Minh bạch cứu trợ</title>
+    <script>
+      // Remove ChatGPT's presentation-only referral parameter from the address bar.
+      // Preserve routes, fragments and every unrelated query value.
+      try {
+        const address = new URL(window.location.href);
+        if (address.searchParams.get('utm_source') === 'chatgpt.com') {
+          address.searchParams.delete('utm_source');
+          window.history.replaceState(window.history.state, '', address.pathname + address.search + address.hash);
+        }
+      } catch { /* Do not block the page if history is unavailable. */ }
+    </script>
   </head>
   <body>
     <div id="root"></div>
