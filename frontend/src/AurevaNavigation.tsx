@@ -35,11 +35,11 @@ export function ContributionTrail({items,onOpenCampaign}:{items:DonationItem[];o
     {!items.length?<div className="trail-empty"><HeartHandshake size={24}/><p>Bạn chưa ghi nhận khoản đóng góp nào. Hãy mở một chiến dịch để bắt đầu.</p></div>:<div className="trail-records">{items.map(r=><article key={r.id} className="trail-record">
       <div className="trail-record-head">
         <div><span className="eyebrow">MÃ GIAO DỊCH · {r.id.slice(0,8).toUpperCase()}</span><h3>{r.campaign_title}</h3><small>{new Date(r.created).toLocaleString('vi-VN')}</small></div>
-        <div className="trail-amount">{money(r.amount)}<span className={'badge '+r.status}>{r.status==='confirmed'?'Đã đối soát':'Chờ đối soát'}</span></div>
+        <div className="trail-amount">{money(r.amount)}<span className={'badge '+r.status}>{r.status==='confirmed'?'Đã đối soát':r.status==='rejected'?'Không được đối soát':'Chờ đối soát'}</span></div>
       </div>
       <div className="trail-stages">
         <div className="trail-stage complete"><span>01</span><div><b>Đã ghi nhận</b><small>Thông tin chuyển khoản đã được gửi vào hệ thống</small></div></div>
-        <div className={'trail-stage '+(r.status==='confirmed'?'complete':'waiting')}><span>02</span><div><b>{r.status==='confirmed'?'Đã xác nhận tiền thực nhận':'Đợi người phụ trách đối soát'}</b><small>Khoản đóng góp chỉ tính vào tổng khi được xác nhận</small></div></div>
+        <div className={'trail-stage '+(r.status==='confirmed'?'complete':'waiting')}><span>02</span><div><b>{r.status==='confirmed'?'Đã xác nhận tiền thực nhận':r.status==='rejected'?'Đã từ chối xác nhận đóng góp':'Đợi người phụ trách đối soát'}</b><small>Khoản đóng góp chỉ tính vào tổng khi được xác nhận</small></div></div>
         <div className="trail-stage outlined"><span>03</span><div><b>Kiểm tra thu – chi chiến dịch</b><small>Xem tổng hợp khoản chi được duyệt và báo cáo công khai</small></div></div>
       </div>
       <button className="btn trail-link" onClick={()=>onOpenCampaign(r.campaign_id)}>Mở thu chi của chiến dịch <ArrowUpRight size={16}/></button>
