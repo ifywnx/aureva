@@ -3,7 +3,7 @@ import {Activity, ArrowRight, ArrowUpRight, CheckCircle2, CircleAlert, Clipboard
 import {ContributionTrail} from './AurevaNavigation';
 import {EvidencePanel,type DocumentInfo,type Attestation} from './Evidence';
 
-type Campaign={id:string;title:string;owner_id:string;raised:number;spent:number;location:string};
+type Campaign={id:string;title:string;description:string;location:string;target:number;raised:number;spent:number;owner_id:string;manager_name:string;contribution_count:number};
 type RecordItem={id:string;campaign_id:string;campaign_title:string;amount:number;status:string;reference?:string;purpose?:string;vendor?:string;reason?:string;created:string;document?:DocumentInfo|null;attestation?:Attestation|null};
 type User={id:string;name:string;role:'donor'|'manager'|'approver'};
 const money=(n:number)=>new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(n);
