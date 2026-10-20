@@ -46,6 +46,70 @@ def register(app):
         if not campaign:raise HTTPException(404,'Không tìm thấy đối tượng.')
         campaign_access(db,campaign['campaign_id'],user)
 
+    def validate_wallet_transaction(w3,contract,owner,digest,tx_hash):
+        tx=w3.eth.get_transaction(tx_hash)
+        fn,params=contract.decode_function_input(tx['input'])
+        if not (
+            (tx['to'] or '').lower()==contract.address.lower()
+            and tx['from'].lower()==owner.lower()
+            and fn.fn_name=='record'
+            and bytes(params['digest']).hex()==digest
+            and int(tx.get('chainId',CHAIN_ID))==CHAIN_ID
+            and int(tx['value'])==0
+        ):
+            raise HTTPException(409,'TX không ghi đúng mã băm bằng ví chủ hợp đồng AUREVA.')
+        return tx
+
+    @app.post('/api/attestations/{entity_id}/prepare-wallet')
+    def prepare_wallet(entity_id:str,user=Depends(current_user)):
+        require(user,'manager','approver')
+        try:
+            w3,contract,owner=read_client()
+            with connect() as db:
+                row=db.execute('SELECT * FROM attestations WHERE entity_id=?',(entity_id,)).fetchone()
+                if not row:raise HTTPException(404,'Chưa có bản ghi xác thực.')
+                permission(db,row,user)
+                if sha(row['payload'].encode())!=row['digest']:
+                    raise HTTPException(409,'Nội dung không khớp mã băm, không thể ký.')
+                if row['status']=='confirmed':
+                    raise HTTPException(409,'Đã xác thực trên Sepolia.')
+                if row['tx_hash']:
+                    raise HTTPException(409,'Đã có TX hash; hãy kiểm tra xác nhận trước.')
+            if contract.functions.recordedAt(bytes.fromhex(row['digest'])).call():
+                raise HTTPException(409,'Mã băm đã có trên Sepolia; không ghi trùng.')
+            return {'chain_id':CHAIN_ID,'contract':contract.address,'owner':owner,
+                    'digest':row['digest'],'data':contract.encode_abi('record',args=[bytes.fromhex(row['digest'])])}
+        except HTTPException:raise
+        except Exception:raise HTTPException(502,'Không chuẩn bị được giao dịch MetaMask; kiểm tra hợp đồng và RPC.')
+
+    @app.post('/api/attestations/{entity_id}/submit-wallet')
+    def submit_wallet(entity_id:str,payload:WalletTransaction,user=Depends(current_user)):
+        require(user,'manager','approver')
+        try:
+            w3,contract,owner=read_client()
+            with connect(write=True) as db:
+                row=db.execute('SELECT * FROM attestations WHERE entity_id=?',(entity_id,)).fetchone()
+                if not row:raise HTTPException(404,'Chưa có bản ghi xác thực.')
+                permission(db,row,user)
+                if sha(row['payload'].encode())!=row['digest']:
+                    raise HTTPException(409,'Nội dung không còn khớp mã băm.')
+                if row['tx_hash'] and row['tx_hash'].lower()!=payload.tx_hash.lower():
+                    raise HTTPException(409,'Bản ghi đã có giao dịch khác; không ghi đè.')
+                validate_wallet_transaction(w3,contract,owner,row['digest'],payload.tx_hash)
+                from web3.exceptions import TransactionNotFound
+                try:receipt=w3.eth.get_transaction_receipt(payload.tx_hash)
+                except TransactionNotFound:receipt=None
+                state='submitted'
+                if receipt and receipt.status==0:state='failed'
+                if receipt and receipt.status==1:
+                    present=contract.functions.recordedAt(bytes.fromhex(row['digest'])).call()>0
+                    if present and w3.eth.block_number-receipt.blockNumber>=2:state='confirmed'
+                db.execute('UPDATE attestations SET status=?,tx_hash=?,raw_tx=NULL,chain_id=?,contract=?,block_number=?,error=NULL WHERE entity_id=?',
+                           (state,payload.tx_hash,CHAIN_ID,contract.address,receipt.blockNumber if receipt else None,entity_id))
+            return {'status':state,'tx_hash':payload.tx_hash}
+        except HTTPException:raise
+        except Exception:raise HTTPException(502,'Không xác minh được TX trên Sepolia. Dùng Etherscan kiểm tra trước khi gửi lại.')
+
     @app.post('/api/attestations/{entity_id}/anchor')
     def anchor(entity_id:str,user=Depends(current_user)):
         require(user,'manager','approver')
