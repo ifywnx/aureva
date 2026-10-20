@@ -82,6 +82,13 @@ def run():
                     page.screenshot(path="work/aureva-desktop.png",full_page=True)
                     expect(page.get_by_role("heading",name="Lòng tốt xứng đáng được đặt đúng niềm tin.")).to_be_visible()
                     expect(page.get_by_role("heading",name="Trao đi yêu thương. Rõ từng đóng góp.")).to_be_visible()
+                    primary_color=page.locator(".v5-hero-actions .btn.primary").evaluate("(el)=>getComputedStyle(el).backgroundColor")
+                    assert primary_color=="rgb(255, 199, 131)", f"Primary CTA must use warm accent, got {primary_color}"
+                    assert page.evaluate("""() => {
+                        const tech=document.querySelector('.v5-tech-section');
+                        const campaigns=document.querySelector('.campaign-section');
+                        return tech && campaigns && !!(tech.compareDocumentPosition(campaigns) & Node.DOCUMENT_POSITION_FOLLOWING);
+                    }"""), "When no campaigns exist, show the technology story before the empty campaign list"
                     expect(page.get_by_role("heading",name="Một luồng cứu trợ. Hai lớp kiểm chứng.")).to_be_visible()
                     expect(page.locator(".v5-proof-core")).to_be_visible()
                     assert page.locator(".v5-proof-status").inner_text().find("Chưa cấu hình") >= 0, "CI must not fabricate live AI/chain configuration"
@@ -114,6 +121,12 @@ def run():
                     expect(mobile.locator(".v5-hero-photo")).to_be_visible()
                     assert mobile.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 2"), "Homepage has horizontal overflow"
                     mobile.screenshot(path="work/aureva-mobile.png",full_page=True)
+                    assert mobile.locator(".v5-hero-actions .btn").count()==2
+                    assert mobile.locator(".v5-hero-actions .btn").first.evaluate("""el => {
+                        const buttons=el.parentElement.querySelectorAll('button');
+                        const b1=buttons[0].getBoundingClientRect(), b2=buttons[1].getBoundingClientRect();
+                        return b2.top>b1.bottom && Math.abs(b1.width-b2.width)<3;
+                    }"""), "Mobile hero CTAs should be stacked with equal widths"
                     expect(mobile.get_by_role("navigation").get_by_role("button",name="Chiến dịch")).to_be_visible()
                     assert mobile.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 2"),"Horizontal overflow on mobile"
                     register_donor(mobile)
