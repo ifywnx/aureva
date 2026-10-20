@@ -148,7 +148,7 @@ def register(app):
         require(user,'manager','approver')
         from web3.exceptions import TransactionNotFound
         try:
-            w3,contract,account=client()
+            w3,contract,owner=read_client()
             with connect() as db:
                 row=db.execute('SELECT * FROM attestations WHERE entity_id=?',(entity_id,)).fetchone()
                 if not row:raise HTTPException(404,'Không tìm thấy bản ghi.')
@@ -161,7 +161,7 @@ def register(app):
             if receipt.status==1:
                 tx=w3.eth.get_transaction(row['tx_hash'])
                 fn,args=contract.decode_function_input(tx['input'])
-                correct=(tx['to']==contract.address and tx['from']==account.address and fn.fn_name=='record' and bytes(args['digest']).hex()==row['digest'] and contract.functions.recordedAt(bytes.fromhex(row['digest'])).call()>0)
+                correct=(tx['to']==contract.address and tx['from'].lower()==owner.lower() and fn.fn_name=='record' and bytes(args['digest']).hex()==row['digest'] and contract.functions.recordedAt(bytes.fromhex(row['digest'])).call()>0)
                 if correct:status='confirmed' if w3.eth.block_number-receipt.blockNumber>=2 else 'submitted'
             with connect(write=True) as db:db.execute('UPDATE attestations SET status=?,block_number=? WHERE entity_id=?',(status,receipt.blockNumber,entity_id))
             return {'status':status,'tx_hash':row['tx_hash']}
@@ -171,7 +171,7 @@ def register(app):
     @app.get('/api/public/attestations/{entity_id}/verify-chain')
     def verify(entity_id:str):
         try:
-            w3,contract,account=client()
+            w3,contract,owner=read_client()
             with connect() as db:row=db.execute('SELECT * FROM attestations WHERE entity_id=?',(entity_id,)).fetchone()
             if not row:raise HTTPException(404,'Không tìm thấy bản ghi.')
             return {'chain_id':CHAIN_ID,'contract':contract.address,'digest':row['digest'],'payload_valid':sha(row['payload'].encode())==row['digest'],'recorded_at':contract.functions.recordedAt(bytes.fromhex(row['digest'])).call()}
