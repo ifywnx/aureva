@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {CalendarDays,ChartNoAxesCombined,CheckCircle2,ClipboardCheck,HeartHandshake,ShieldCheck} from 'lucide-react';
+import {CalendarDays,BarChart3,CheckCircle2,ClipboardCheck,HeartHandshake,ShieldCheck} from 'lucide-react';
 
 type Point={day:string;confirmed:number;approved:number};
 type Event={id:number;action:string;occurred_at:string;campaign_id:string;campaign_title:string;amount:number};
@@ -27,7 +27,7 @@ export function ActivityInsights({campaignId}:{campaignId?:string}){
  },[campaignId]);
  const max=Math.max(1,...(data?.trend??[]).flatMap(r=>[r.confirmed,r.approved]));
  return <section className="activity-insights" aria-label="Biểu đồ và lịch sử giao dịch đã được xác nhận">
-   <div className="activity-insights-head"><div><span className="eyebrow"><ChartNoAxesCombined size={16}/> DỮ LIỆU THỜI GIAN THỰC TỪ NHẬT KÝ</span><h2>Hành trình minh bạch, nhìn thấy được.</h2><p>Biểu đồ chỉ sử dụng các khoản đã đối soát và khoản chi đã được duyệt.</p></div></div>
+   <div className="activity-insights-head"><div><span className="eyebrow"><BarChart3 size={16}/> DỮ LIỆU THỜI GIAN THỰC TỪ NHẬT KÝ</span><h2>Hành trình minh bạch, nhìn thấy được.</h2><p>Biểu đồ chỉ sử dụng các khoản đã đối soát và khoản chi đã được duyệt.</p></div></div>
    {loading?<div className="activity-placeholder" role="status">Đang tải diễn biến thu chi…</div>:
     error?<div className="activity-placeholder" role="alert">{error}</div>:
     !data||!data.events.length?<div className="activity-placeholder"><CalendarDays size={24}/><span>Chưa có quyết định thu–chi nào được ghi vào nhật ký. Biểu đồ sẽ xuất hiện khi có dữ liệu thực.</span></div>:
