@@ -93,7 +93,7 @@ Workflow GitHub Actions: `.github/workflows/aureva-quality.yml` tự chạy test
 - **Data bền vững:** tạo chiến dịch preview, tải lại, đăng nhập lại và kiểm tra sau redeploy.
 - **Xuất báo cáo:** tạo PDF trên API, tải xuống, kiểm tra hash của PDF, ghi dấu báo cáo qua ví và xác minh trực tiếp.
 
-Hướng dẫn theo thứ tự và kịch bản 6 phút tại **[DEMO_28_10.md](DEMO_28_10.md)**.
+Luồng chạy kiểm thử và trạng thái tích hợp được mô tả trong các mục trên; toàn bộ hoạt động live phải được xác minh trên domain staging trước khi đưa lên production.
 
 ## Trạng thái xác minh
 
