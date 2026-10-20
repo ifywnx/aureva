@@ -108,3 +108,17 @@ def test_assistant_provider_does_not_leak_key_on_error(env, monkeypatch):
     resp = web.post(PATH, json={'message': 'Minh bạch là gì?'})
     assert resp.status_code == 502
     assert 'unit-test-SECRET-123' not in resp.text
+
+
+def test_assistant_provider_rate_limit_is_actionable(env, monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-key-only')
+    monkeypatch.setattr(assistant.httpx, 'post',
+        lambda *args, **kwargs: httpx.Response(
+            429, json={'error': {'message': 'internal sensitive data must stay hidden'}}
+        ))
+    web = TestClient(backend.app, headers={'X-Aureva-Request': '1'})
+    response = web.post(PATH, json={'message': 'AI giúp tôi kiểm tra chiến dịch?'})
+    assert response.status_code == 503
+    assert 'giới hạn' in response.json()['detail']
+    assert 'Usage/Billing' in response.json()['detail']
+    assert 'internal sensitive data' not in response.text
