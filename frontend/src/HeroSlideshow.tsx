@@ -46,6 +46,7 @@ export function HeroSlideshow(){
  const [viewportVisible,setViewportVisible]=useState(true);
  const root=useRef<HTMLDivElement>(null);
  const touchStartX=useRef<number|null>(null);
+ const pointerFocus=useRef(false);
  const slide=slides[current];
  const suspended=Boolean(reducedMotion)||manualPause||hovered||focused||!visible||!viewportVisible;
  useEffect(()=>{
@@ -80,8 +81,10 @@ export function HeroSlideshow(){
  return <div className="v5-hero-slideshow" ref={root}
    aria-label="Bộ sưu tập ảnh hoạt động cộng đồng tại Việt Nam"
    onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}
-   onFocusCapture={()=>setFocused(true)}
-   onBlurCapture={event=>{if(!event.currentTarget.contains(event.relatedTarget))setFocused(false)}}
+   onPointerDownCapture={()=>{pointerFocus.current=true;setFocused(false)}}
+   onKeyDownCapture={()=>{pointerFocus.current=false}}
+   onFocusCapture={()=>{if(!pointerFocus.current)setFocused(true)}}
+   onBlurCapture={event=>{if(!event.currentTarget.contains(event.relatedTarget)){setFocused(false);pointerFocus.current=false}}}
    onTouchStart={event=>{touchStartX.current=event.touches[0].clientX}}
    onTouchEnd={touchEnd}>
    <div className="v5-hero-slide-stack">
