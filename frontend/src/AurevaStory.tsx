@@ -16,7 +16,7 @@ export function AurevaMark({size=35}:{size?:number}){
   <circle cx="39.5" cy="26.5" r="2.3" fill="currentColor"/>
  </svg>;
 }
-export function PublicIntro({data,onExplore,onTransparency}:{data:Metrics|null;onExplore:()=>void;onTransparency:()=>void}){
+export function PublicIntro({data,dataUnavailable,onExplore,onTransparency}:{data:Metrics|null;dataUnavailable?:boolean;onExplore:()=>void;onTransparency:()=>void}){
  const reduced=useReducedMotion();
  return <>
   <section className="hero v5-hero" aria-labelledby="v5-hero-title">
@@ -48,9 +48,9 @@ export function PublicIntro({data,onExplore,onTransparency}:{data:Metrics|null;o
   </section>
   <div className="v5-statband" aria-label="Các chỉ số công khai">
     <div className="v5-stat-lead"><span className="v5-stat-lead-icon"><Waves size={25}/></span><div><strong>Niềm tin đến từ những con số thật.</strong><small>Dữ liệu được đối soát và phê duyệt</small></div></div>
-    <div className="v5-stat"><span>Tổng thu xác nhận</span><strong>{data?fmt(data.raised)+' ₫':'Đang tải…'}</strong></div>
-    <div className="v5-stat"><span>Khoản chi đã duyệt</span><strong>{data?fmt(data.spent)+' ₫':'Đang tải…'}</strong></div>
-    <div className="v5-stat"><span>Chiến dịch</span><strong>{data?fmt(data.campaigns.length):'…'}</strong></div>
+    <div className="v5-stat"><span>Tổng thu xác nhận</span><strong>{data?fmt(data.raised)+' ₫':dataUnavailable?'Chưa kết nối':'Đang tải…'}</strong></div>
+    <div className="v5-stat"><span>Khoản chi đã duyệt</span><strong>{data?fmt(data.spent)+' ₫':dataUnavailable?'Chưa kết nối':'Đang tải…'}</strong></div>
+    <div className="v5-stat"><span>Chiến dịch</span><strong>{data?fmt(data.campaigns.length):dataUnavailable?'—':'…'}</strong></div>
   </div>
  </>;
 }
