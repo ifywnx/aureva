@@ -442,3 +442,27 @@ h1,h2,h3{letter-spacing:-.04em}
 @media(max-width:370px){
  .proof-visual{min-height:405px}
 }
+
+
+/* AUREVA reviewer and public verification UX – state-driven controls */
+.review-warning-check {
+  display: flex; align-items: flex-start; gap: .7rem; padding: 1rem;
+  border: 1px solid #d2a96a; border-radius: 14px;
+  background: #fff7e8; color: #5f401b; font-size: .9rem; line-height: 1.5;
+}
+.review-warning-check input[type="checkbox"] {
+  flex: 0 0 18px; width: 18px; height: 18px; margin: .16rem 0 0;
+  accent-color: #946019; cursor: pointer;
+}
+.review-warning-check span {display: flex; align-items: flex-start; gap: .5rem; flex: 1}
+.review-warning-check svg {flex: 0 0 17px; margin-top: .12rem}
+.review-warning-note, .chain-verify-result {
+  display: flex; align-items: flex-start; gap: .5rem;
+  border-radius: 12px; padding: .8rem 1rem; line-height: 1.5;
+  font-size: .875rem; margin: .45rem 0;
+}
+.review-warning-note {background: #fff2de; color: #75511b}
+.chain-verify-result {background: #e9f3ef; color: #23584a}
+.review-warning-note svg, .chain-verify-result svg {flex: 0 0 16px; margin-top: .12rem}
+.work-decision select:focus-visible, .work-decision input:focus-visible,
+.chain-v3-actions button:focus-visible {outline: 2px solid #246c60; outline-offset: 3px}
