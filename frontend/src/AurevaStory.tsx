@@ -1,4 +1,4 @@
-import {ArrowRight, ArrowUpRight, BrainCircuit, CheckCircle2, ClipboardCheck, FileCheck2, Fingerprint, HandHeart, HeartHandshake, ShieldCheck, Sparkles, Waves, Wallet, Zap} from 'lucide-react';
+import {ArrowRight, ArrowUpRight, BrainCircuit, CheckCircle2, ClipboardCheck, FileCheck2, Fingerprint, HandHeart, ShieldCheck, Sparkles, Waves, Wallet, Zap} from 'lucide-react';
 import {motion,useReducedMotion} from 'framer-motion';
 import {ProofOrbit} from './ProofOrbit';
 import {HeroSlideshow} from './HeroSlideshow';
