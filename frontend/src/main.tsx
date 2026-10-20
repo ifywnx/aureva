@@ -63,7 +63,7 @@ function App(){
  if(modal==='expense'&&selected){await api(`/campaigns/${selected.id}/expenses`,{amount,purpose:value('purpose'),vendor:value('vendor')});await refresh();setNotice('Khoản chi đã được gửi chờ phê duyệt.');}
  });if(success&&modal!=='register')setModal('');}
  async function inspect(c:Campaign){await run(async()=>{setDetail(await api('/public/campaigns/'+c.id));setReports(await api('/public/campaigns/'+c.id+'/reports'));setSelected(c);setPage('detail');window.scrollTo({top:0,behavior:'auto'})})}
- async function decision(e:FormEvent<HTMLFormElement>,id:string){e.preventDefault();const f=new FormData(e.currentTarget);await run(async()=>{await api('/expenses/'+id+'/decision',{status:f.get('status'),reason:f.get('reason')});await refresh();setNotice('Đã lưu quyết định. Chưa ghi lên Blockchain.');});}
+ async function decision(e:FormEvent<HTMLFormElement>,id:string){e.preventDefault();const f=new FormData(e.currentTarget);await run(async()=>{await api('/expenses/'+id+'/decision',{status:f.get('status'),reason:f.get('reason'),warnings_acknowledged:f.get('warnings_acknowledged')==='true'});await refresh();setNotice('Đã lưu quyết định. Chưa ghi lên Blockchain.');});}
  const owned=data?.campaigns.filter(c=>c.owner_id===user?.id)||[];
  const visibleCampaigns=(data?.campaigns??[]).filter(c=>(c.title+' '+c.location+' '+c.description).toLocaleLowerCase('vi').includes(campaignQuery.toLocaleLowerCase('vi').trim()));
  function navigate(nextPage:string){setPage(nextPage);window.scrollTo({top:0,behavior:'auto'});}
