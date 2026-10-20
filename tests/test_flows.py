@@ -91,3 +91,31 @@ def test_database_survives_new_python_process(env):
     cid=campaign(m)
     result=subprocess.run([sys.executable,'-c',"from backend.app import init_db,connect; init_db();\nwith connect() as db: print(db.execute('SELECT id FROM campaigns').fetchone()[0])"],env={**os.environ,'AUREVA_DB':str(a.DB_PATH)},capture_output=True,text=True,check=True)
     assert result.stdout.strip()==cid
+
+
+def test_campaign_closure_is_audited_and_stops_new_money_operations(env):
+    manager, donor, approver, other = client('manager'), client('donor'), client('approver'), client('other')
+    cid=campaign(manager)
+    assert donor.post(f'/api/campaigns/{cid}/close',json={}).status_code==403
+    assert other.post(f'/api/campaigns/{cid}/close',json={}).status_code==403
+    d=donor.post(f'/api/campaigns/{cid}/donations',json={'amount':500000,'reference':'closure-001'})
+    assert d.status_code==201
+    assert manager.post(f'/api/campaigns/{cid}/close',json={}).status_code==409
+    assert manager.post(f'/api/donations/{d.json()["id"]}/confirm',json={}).status_code==200
+    e=manager.post(f'/api/campaigns/{cid}/expenses',json={'amount':100000,'purpose':'Mua nước cứu trợ','vendor':'Nhà phân phối'})
+    assert e.status_code==201
+    assert manager.post(f'/api/campaigns/{cid}/close',json={}).status_code==409
+    assert approver.post(f'/api/expenses/{e.json()["id"]}/decision',json={'status':'rejected','reason':'Thiếu chứng từ gốc'}).status_code==200
+    closed=manager.post(f'/api/campaigns/{cid}/close',json={})
+    assert closed.status_code==200,closed.text
+    assert closed.json()['status']=='closed'
+    assert manager.post(f'/api/campaigns/{cid}/close',json={}).status_code==409
+    data=donor.get('/api/public/dashboard').json()
+    assert data['campaigns'][0]['is_closed']
+    assert donor.get(f'/api/public/campaigns/{cid}').json()['campaign']['is_closed']
+    assert donor.post(f'/api/campaigns/{cid}/donations',json={'amount':1000,'reference':'closure-002'}).status_code==409
+    assert manager.post(f'/api/campaigns/{cid}/expenses',json={'amount':1000,'purpose':'Hỗ trợ mới','vendor':'Nhà cung cấp'}).status_code==409
+    # Public evidence stays available after closing. No storage migration required.
+    assert manager.post(f'/api/campaigns/{cid}/reports',json={}).status_code==201
+    with env.connect() as db:
+        assert db.execute("SELECT COUNT(*) FROM audit WHERE entity_id=? AND action='campaign.closed'",(cid,)).fetchone()[0]==1
