@@ -18,6 +18,7 @@ import './premium.css';
 import './lively.css';
 import './blueimpact.css';
 import {Reports,type DocumentInfo,type Attestation,type ReportInfo} from './Evidence';
+import './typography.css';
 type User={id:string;name:string;email:string;role:'donor'|'manager'|'approver'};
 type Campaign={id:string;title:string;description:string;location:string;target:number;raised:number;spent:number;owner_id:string;manager_name:string;contribution_count:number;cover_url:string|null};
 type RecordItem={id:string;campaign_id:string;campaign_title:string;amount:number;status:string;reference?:string;purpose?:string;vendor?:string;reason?:string;created:string;document?:DocumentInfo|null;attestation?:Attestation|null};
