@@ -132,7 +132,7 @@ function App(){
  {page==='workspace'&&user&&<WorkspaceConsole user={user} owned={owned} donations={workspace.donations} expenses={workspace.expenses} busy={busy}
    onCreateCampaign={()=>open('campaign')}
    onProposeExpense={c=>open('expense',c)}
-   onConfirmDonation={id=>void run(async()=>{await api('/donations/'+id+'/confirm',{});await refresh();setNotice('Đã xác nhận số tiền thực nhận và cập nhật số liệu.');})}
+   onConfirmDonation={id=>void run(async()=>{await api('/donations/'+id+'/confirm',{});await refresh();setNotice(user?.id==='aureva_demo_manager_v1'?'Đã xác nhận khoản đóng góp mô phỏng. Không phát sinh tiền thật.':'Đã xác nhận số tiền thực nhận và cập nhật số liệu.');})}
     onRejectDonation={(id,reason)=>void run(async()=>{await api('/donations/'+id+'/reject',{reason});await refresh();setNotice('Đã từ chối khai báo chưa đối soát và lưu lý do vào nhật ký.');})}
    onDecision={decision}
    onRefresh={()=>refresh()}
