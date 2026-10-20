@@ -199,9 +199,11 @@ def dashboard():
 def create_campaign(payload: CampaignInput,user=Depends(current_user)):
     require(user,'manager')
     id=uid()
+    is_demo_manager = user['id'] == 'aureva_demo_manager_v1' and user['email'] == 'preview-manager@aureva.invalid'
+    title = '[DEMO] ' + payload.title[:153] if is_demo_manager else payload.title
     with connect(write=True) as db:
-        db.execute('INSERT INTO campaigns VALUES(?,?,?,?,?,?,?)',(id,payload.title,payload.description,payload.location,payload.target,user['id'],now()))
-        audit(db,user,'campaign.created',id,payload.model_dump())
+        db.execute('INSERT INTO campaigns VALUES(?,?,?,?,?,?,?)',(id,title,payload.description,payload.location,payload.target,user['id'],now()))
+        audit(db,user,'campaign.created',id,{**payload.model_dump(),'is_demo':is_demo_manager})
     return {'id':id}
 
 @app.get('/api/public/campaigns/{id}')
@@ -275,6 +277,10 @@ def decide(id:str,payload:Decision,user=Depends(current_user)):
     with connect(write=True) as db:
         row=db.execute('SELECT * FROM expenses WHERE id=?',(id,)).fetchone()
         if not row: raise HTTPException(404,'Không tìm thấy khoản chi.')
+        if user['id']=='aureva_demo_approver_v1':
+            demo_campaign=db.execute('SELECT owner_id FROM campaigns WHERE id=?',(row['campaign_id'],)).fetchone()
+            if not demo_campaign or demo_campaign['owner_id']!='aureva_demo_manager_v1':
+                raise HTTPException(403,'Tài khoản trình diễn chỉ được duyệt chiến dịch demo.')
         if row['creator_id']==user['id']: raise HTTPException(403,'Không được tự duyệt khoản chi.')
         if row['status']!='pending': raise HTTPException(409,'Khoản chi đã có quyết định.')
         if payload.status=='approved':
