@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {AnimatePresence,motion,useReducedMotion} from 'framer-motion';
-import {ArrowUpRight,Bot,CheckCircle2,ChevronDown,HeartHandshake,MessageCircle,RotateCcw,Send,ShieldCheck,Sparkles,X} from 'lucide-react';
+import {ArrowUpRight,Bot,ChevronDown,HeartHandshake,MessageCircle,RotateCcw,Send,ShieldCheck,Sparkles,X} from 'lucide-react';
 import './AurevaChat.css';
 
 type Turn={role:'assistant'|'user';content:string;status?:'error'};
