@@ -82,6 +82,17 @@ def run():
                     assert '?ref=preserved#intro' in page.url, "Unrelated query and hash must remain untouched"
                     Path("work").mkdir(exist_ok=True)
                     page.screenshot(path="work/aureva-desktop.png",full_page=True)
+                    # Assistive chatbot is prominent, accessible and driven by a genuine API contract.
+                    page.route("**/api/public/assistant/chat",lambda route: route.fulfill(
+                        status=200,content_type="application/json",body='{"reply":"Dữ liệu thật từ bảng công khai, không tự suy đoán.","model":"test-only","data_status":"connected","campaign_count":0}'))
+                    page.get_by_role("button",name="Mở trợ lý AI AUREVA").click()
+                    chat=page.get_by_role("dialog",name="Trợ lý AI AUREVA")
+                    expect(chat.get_by_role("heading",name="AUREVA AI")).to_be_visible()
+                    chat.get_by_role("button",name="Hiện có chiến dịch cứu trợ nào?").click()
+                    expect(chat.get_by_text("Dữ liệu thật từ bảng công khai, không tự suy đoán.")).to_be_visible(timeout=15000)
+                    expect(chat.get_by_text("Đã đọc dữ liệu công khai")).to_be_visible()
+                    chat.get_by_role("button",name="Thu nhỏ trợ lý").click()
+                    expect(chat).to_have_count(0)
                     expect(page.get_by_role("heading",name="Lòng tốt xứng đáng được đặt đúng niềm tin.")).to_be_visible()
                     expect(page.get_by_role("heading",name="Một hành động tử tế. Một hành trình rõ ràng.")).to_be_visible()
                     assert page.locator(".journey-step").count()==6, "Expected six connected business stages"
@@ -174,6 +185,11 @@ def run():
                     donor=browser.new_context(viewport={"width":390,"height":844},is_mobile=True,has_touch=True)
                     mobile=donor.new_page()
                     mobile.goto(BASE,wait_until="networkidle")
+                    mobile.get_by_role("button",name="Mở trợ lý AI AUREVA").click()
+                    mobile_chat=mobile.get_by_role("dialog",name="Trợ lý AI AUREVA")
+                    expect(mobile_chat).to_be_visible()
+                    assert mobile_chat.evaluate("(el) => el.getBoundingClientRect().right <= window.innerWidth + 2 && el.getBoundingClientRect().left >= -2"), "Chat window must fit a mobile viewport"
+                    mobile_chat.get_by_role("button",name="Thu nhỏ trợ lý").click()
                     expect(mobile.locator(".hero")).to_be_visible()
                     expect(mobile.locator(".v5-hero-photo")).to_be_visible()
                     expect(mobile.locator(".journey-flow")).to_be_visible()
