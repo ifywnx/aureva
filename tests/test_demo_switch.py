@@ -68,6 +68,10 @@ def test_demo_one_tap_change_role_without_credentials(env, monkeypatch):
         for role in ('donor','manager','approver'):
             assert db.execute('SELECT count(*) FROM users WHERE id=?',
                  ('aureva_demo_'+role+'_v1',)).fetchone()[0] == 1
+    # Stopping the demo flag immediately invalidates every issued demo cookie.
+    monkeypatch.setattr(demo, 'enabled', lambda: False)
+    assert web.get('/api/auth/me').status_code == 401
+    assert web.post('/api/demo/switch',json={'role':'manager'}).status_code == 404
 
 
 def test_demo_approver_cannot_touch_normal_campaigns(env, monkeypatch):
