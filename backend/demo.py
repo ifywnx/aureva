@@ -46,19 +46,32 @@ def register(app):
     def switch(payload: DemoSelection, request: Request, response: Response):
         if not enabled():
             raise HTTPException(404, 'Chế độ demo không khả dụng.')
-        if not (request.headers.get('host', '').lower().endswith('.vercel.app')
-                and request.url.scheme == 'https'):
-            # HTTPS provided by Vercel; proxy headers can vary, check Host and
-            # authenticated browser Origin instead of trusting forwarded scheme.
-            origin = request.headers.get('origin', '')
-            host = request.headers.get('host', '').lower()
-            if not (host.endswith('.vercel.app') and origin == 'https://' + host):
-                raise HTTPException(403, 'Chế độ demo chỉ dành cho Vercel Preview.')
+        # Same-origin is mandatory: unlike normal requests, a privileged demo
+        # account switch must never accept a request with an absent Origin.
+        host = request.headers.get('host', '').lower()
+        origin = request.headers.get('origin', '')
+        if not (host.endswith('.vercel.app') and origin == 'https://' + host):
+            raise HTTPException(403, 'Chế độ demo chỉ dành cho trình duyệt Vercel Preview.')
 
         account_id, name, email = DEMO_ACCOUNTS[payload.role]
         old_token = request.cookies.get('aureva_session', '')
         token = secrets.token_urlsafe(32)
         with connect(write=True) as db:
+            # Bound shared-demo session creation to avoid high-rate abuse.
+            ip = request.client.host if request.client else 'unknown'
+            abuse_key = 'demo-switch:' + digest(ip)
+            now = int(time.time())
+            record = db.execute('SELECT count,expires FROM attempts WHERE key=?',
+                                (abuse_key,)).fetchone()
+            active = bool(record and record['expires'] > now)
+            prior_count = int(record['count']) if active else 0
+            if prior_count >= 60:
+                raise HTTPException(429, 'Đã đổi tài khoản quá nhiều lần. Thử lại sau 15 phút.')
+            db.execute(
+                'INSERT INTO attempts(key,count,expires) VALUES(?,?,?) '
+                'ON CONFLICT(key) DO UPDATE SET count=excluded.count,expires=excluded.expires',
+                (abuse_key, prior_count + 1, int(record['expires']) if active else now + 900),
+            )
             # Never turn a real account into a demo identity, even if ids collide.
             user = db.execute('SELECT * FROM users WHERE id=?', (account_id,)).fetchone()
             if user:
