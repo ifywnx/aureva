@@ -1,6 +1,6 @@
 import React, {useEffect,useState,type FormEvent} from 'react';
 import {createRoot} from 'react-dom/client';
-import {HeartHandshake, ArrowUpRight, ShieldCheck, Wallet, Plus, X, MapPin, Search} from 'lucide-react';
+import {HeartHandshake, ArrowUpRight, ShieldCheck, Plus, X, MapPin, Search} from 'lucide-react';
 import {AnimatePresence, motion, useReducedMotion} from 'framer-motion';
 import {PageMotion, ScrollProgress, StatValue} from './Motion';
 import {ImpactJourney} from './ImpactJourney';
