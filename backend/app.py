@@ -299,6 +299,8 @@ from backend.campaign_media import register as register_campaign_media
 register_campaign_media(app)
 from backend.activity import register as register_activity
 register_activity(app)
+from backend.assistant import register as register_assistant
+register_assistant(app)
 
 dist=ROOT/'frontend/dist'
 if dist.exists():
