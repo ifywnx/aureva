@@ -11,7 +11,7 @@ export function AurevaHeader({page,user,onNavigate,onLogin,onLogout}:{
     <div className="site-header-inner">
       <button className="brand brand-original" onClick={()=>onNavigate('overview')} aria-label="AUREVA trang chủ">
         <span className="brand-monogram"><AurevaMark size={35}/></span>
-        <span className="brand-wordmark">AUREVA<small>Gắn kết. Minh bạch. Lan tỏa.</small></span>
+        <span className="brand-wordmark">AUREVA<small>Trao gửi yêu thương, rõ từng đóng góp.</small></span>
       </button>
       <nav className="site-nav" aria-label="Điều hướng chính">
         <button className={page==='overview'?'active':''} aria-current={page==='overview'?'page':undefined} onClick={()=>onNavigate('overview')}><Layers3 size={16}/> Tổng quan công khai</button>
