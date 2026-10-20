@@ -34,7 +34,7 @@ def login(page, email, password=PASSWORD):
     dialog.locator('input[name="email"]').fill(email)
     dialog.locator('input[name="password"]').fill(password)
     dialog.get_by_role("button", name="Đăng nhập", exact=True).click()
-    expect(page.locator("header .account b")).to_be_visible(timeout=15000)
+    expect(page.locator("header .site-user strong")).to_be_visible(timeout=15000)
 
 
 def register_donor(page):
@@ -49,7 +49,7 @@ def register_donor(page):
     dialog.locator('input[name="email"]').fill("donor-smoke@test.vn")
     dialog.locator('input[name="password"]').fill(PASSWORD)
     dialog.get_by_role("button", name="Đăng nhập", exact=True).click()
-    expect(page.locator("header .account b")).to_contain_text("Người góp", timeout=15000)
+    expect(page.locator("header .site-user strong")).to_contain_text("Người góp", timeout=15000)
 
 
 def run():
@@ -79,7 +79,9 @@ def run():
                     page=manager.new_page()
                     page.goto(BASE,wait_until="networkidle")
                     expect(page.get_by_role("heading",name="Mỗi đóng góp đều có một hành trình rõ ràng.")).to_be_visible()
-                    expect(page.get_by_text("Niềm tin bắt đầu",exact=False)).to_be_visible()
+                    expect(page.get_by_text("Khi sự sẻ chia",exact=False)).to_be_visible()
+                    page.get_by_role("navigation").get_by_role("button",name="Minh bạch").click()
+                    expect(page.get_by_role("heading",name="Mọi con số đều cần lời giải thích.")).to_be_visible()
                     page.get_by_role("navigation").get_by_role("button",name="Chiến dịch").click()
                     expect(page.locator(".hero")).to_have_count(0)
                     page.get_by_role("navigation").get_by_role("button",name="Tổng quan công khai").click()
@@ -112,6 +114,9 @@ def run():
                     dialog.locator('input[name="reference"]').fill("browser-test-001")
                     dialog.get_by_role("button",name="Lưu thông tin").click()
                     expect(mobile.get_by_text("chờ người phụ trách đối soát",exact=False)).to_be_visible(timeout=15000)
+                    mobile.get_by_role("navigation").get_by_role("button",name="Không gian làm việc").click()
+                    expect(mobile.get_by_role("heading",name="Hành trình đóng góp của bạn")).to_be_visible()
+                    expect(mobile.get_by_role("button",name="Mở thu chi của chiến dịch")).to_be_visible()
                     donor.close()
                     print("Browser smoke: desktop navigation, manager login/create/detail, mobile layout, donor registration/login/donation PASSED")
                 finally:
