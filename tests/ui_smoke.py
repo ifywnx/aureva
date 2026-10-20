@@ -108,12 +108,8 @@ def run():
                     mobile=donor.new_page()
                     mobile.goto(BASE,wait_until="networkidle")
                     expect(mobile.locator(".hero")).to_be_visible()
-                    proof=mobile.evaluate("""() => {
-                        const hero=document.querySelector('.hero').getBoundingClientRect();
-                        const sheet=document.querySelector('.proof-visual-sheet').getBoundingClientRect();
-                        return {heroBottom:hero.bottom,sheetBottom:sheet.bottom};
-                    }""")
-                    assert proof["sheetBottom"] <= proof["heroBottom"]+3, "Mobile proofboard is clipped by hero"
+                    expect(mobile.locator(".heart-hero-visual")).to_be_visible()
+                    assert mobile.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 2"), "Homepage has horizontal overflow"
                     mobile.screenshot(path="work/aureva-mobile.png",full_page=True)
                     expect(mobile.get_by_role("navigation").get_by_role("button",name="Chiến dịch")).to_be_visible()
                     assert mobile.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 2"),"Horizontal overflow on mobile"
