@@ -143,8 +143,17 @@ def call_openai(message: str, history: list[dict], snapshot: dict):
             json=body,
             timeout=35,
         )
+        if result.status_code == 429:
+            # A provider-side 429 is not a failed user login nor the local chat limit.
+            # Repeated immediate retries can increase costs and trigger more throttling.
+            raise HTTPException(503,
+                'OpenAI đang giới hạn lượt gọi hoặc tài khoản API đã hết hạn mức. '
+                'Hãy kiểm tra Usage/Billing trên OpenAI Platform; chờ một lúc rồi thử lại.')
+        if result.status_code in (401, 403):
+            raise HTTPException(503,
+                'Khóa API OpenAI không được chấp nhận. Quản trị viên cần cập nhật khóa trên Vercel Preview.')
         if result.status_code != 200:
-            raise HTTPException(502, 'OpenAI chưa trả lời được (HTTP ' + str(result.status_code) + '). Kiểm tra key, quota hoặc thử lại.')
+            raise HTTPException(502, 'OpenAI tạm thời không phản hồi (HTTP ' + str(result.status_code) + '). Vui lòng thử lại sau.')
         data = result.json()
         if data.get('status') != 'completed':
             raise HTTPException(502, 'Câu trả lời AI chưa hoàn tất. Hãy thử lại.')
