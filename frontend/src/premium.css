@@ -466,3 +466,10 @@ h1,h2,h3{letter-spacing:-.04em}
 .review-warning-note svg, .chain-verify-result svg {flex: 0 0 16px; margin-top: .12rem}
 .work-decision select:focus-visible, .work-decision input:focus-visible,
 .chain-v3-actions button:focus-visible {outline: 2px solid #246c60; outline-offset: 3px}
+
+
+/* No-payment notice is restricted to the demo donor form. */
+.demo-payment-disclaimer{display:flex;align-items:flex-start;gap:12px;padding:16px;border:1px solid #b8d9d0;border-radius:14px;background:#eef9f4;color:#1c5f4f;text-align:left;line-height:1.5}
+.demo-payment-disclaimer>svg{flex:0 0 19px;margin-top:2px}
+.demo-payment-disclaimer strong{display:block;margin-bottom:4px;font-size:13px}
+.demo-payment-disclaimer p{margin:0;font-size:12px;line-height:1.7}
