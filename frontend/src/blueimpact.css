@@ -646,3 +646,13 @@ body{background:var(--v5-paper);color:var(--v5-text);font-family:'Be Vietnam Pro
  .journey-step,.journey-step-disc{transition:none!important}
  .journey-proof-symbol{animation:none!important}
 }
+
+
+/* Honest recovery when deployment has no connected database. */
+.identity-shell .data-unavailable{display:flex;align-items:flex-start;gap:18px;justify-items:initial;text-align:left;padding:28px 31px;min-height:0;border:1px solid #CDE0F7;border-radius:16px;background:linear-gradient(110deg,#F1F8FF,#FFFFFF);color:#235DA9}
+.identity-shell .data-unavailable>svg{margin-top:4px;color:#3687DF;flex-shrink:0}
+.identity-shell .data-unavailable>div{flex:1}
+.identity-shell .data-unavailable h3{font-size:17px;color:#184577;margin:0 0 10px;letter-spacing:-.035em}
+.identity-shell .data-unavailable p{font-size:11px;color:#6C88A9;line-height:1.9;margin:0 0 13px}
+.identity-shell .data-unavailable .btn{min-height:38px;display:inline-flex;align-items:center;gap:8px}
+@media(max-width:680px){.identity-shell .data-unavailable{padding:19px;gap:12px}.identity-shell .data-unavailable h3{font-size:15px}}
