@@ -77,7 +77,9 @@ def run():
                 try:
                     manager=browser.new_context(viewport={"width":1440,"height":900},accept_downloads=True)
                     page=manager.new_page()
-                    page.goto(BASE,wait_until="networkidle")
+                    page.goto(BASE+'/?utm_source=chatgpt.com&ref=preserved#intro',wait_until="networkidle")
+                    assert 'utm_source=' not in page.url, "Referral query should be removed from address bar"
+                    assert '?ref=preserved#intro' in page.url, "Unrelated query and hash must remain untouched"
                     Path("work").mkdir(exist_ok=True)
                     page.screenshot(path="work/aureva-desktop.png",full_page=True)
                     expect(page.get_by_role("heading",name="Lòng tốt xứng đáng được đặt đúng niềm tin.")).to_be_visible()
@@ -144,7 +146,9 @@ def run():
                         };
                     })()""")
                     wallet_page=wallet.new_page()
-                    wallet_page.goto(BASE+'/deploy-sepolia.html',wait_until='networkidle')
+                    wallet_page.goto(BASE+'/deploy-sepolia.html?utm_source=chatgpt.com&keep=1#contract',wait_until='networkidle')
+                    assert 'utm_source=' not in wallet_page.url
+                    assert '?keep=1#contract' in wallet_page.url
                     expect(wallet_page.get_by_role('heading',name='Triển khai Blockchain. Không cần chia sẻ khóa ví.')).to_be_visible()
                     assert wallet_page.get_by_role('button',name='2. Deploy smart contract').is_disabled()
                     assert wallet_page.evaluate("!window.__walletSent"), 'Wallet signing must never start automatically'
