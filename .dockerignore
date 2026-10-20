@@ -1,0 +1,21 @@
+# Never ship secrets, user data, build caches, or local accounts.
+.git
+.github
+.env
+.env.*
+!.env.example
+.vercel
+node_modules
+**/node_modules
+.venv
+**/.venv
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+**/*.tsbuildinfo
+data
+work
+*.log
+*.sqlite
+*.db
