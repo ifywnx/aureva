@@ -209,3 +209,27 @@ body,.identity-shell{
 @media(max-width:400px){
   .identity-shell .aureva-demo-role{font-size:8.5px}
 }
+
+
+/* Donation reconciliation: explicit, mobile-friendly manager actions */
+.donation-reconcile-actions {
+ display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end;
+ gap:.65rem; flex:1 1 100%; padding-top:.35rem;
+}
+.donation-reject-form {
+ display:flex; gap:.75rem; align-items:end; flex:1 1 100%;
+ border:1px solid #e5ded2; border-radius:14px; padding:.85rem;
+ background:#faf8f3;
+}
+.donation-reject-form label {display:grid; gap:.4rem; flex:1; min-width:0; font-size:.82rem; font-weight:600}
+.donation-reject-form input {width:100%; box-sizing:border-box; border:1px solid #d9d6ce;
+ border-radius:10px; padding:.7rem .8rem; font:inherit; color:inherit; background:#fff}
+.donation-reject-form input:focus-visible, .donation-reject-form button:focus-visible {
+ outline:2px solid #286a60; outline-offset:2px;
+}
+@media(max-width:640px){
+ .donation-reconcile-actions{justify-content:stretch}
+ .donation-reconcile-actions>button{flex:1 1 100%; justify-content:center}
+ .donation-reject-form{flex-direction:column;align-items:stretch}
+ .donation-reject-form label,.donation-reject-form button{width:100%}
+}
