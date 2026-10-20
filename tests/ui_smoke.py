@@ -107,12 +107,20 @@ def run():
                     donor=browser.new_context(viewport={"width":390,"height":844},is_mobile=True,has_touch=True)
                     mobile=donor.new_page()
                     mobile.goto(BASE,wait_until="networkidle")
-                    mobile.screenshot(path="work/aureva-mobile.png",full_page=True)
                     expect(mobile.locator(".hero")).to_be_visible()
+                    proof=mobile.evaluate("""() => {
+                        const hero=document.querySelector('.hero').getBoundingClientRect();
+                        const sheet=document.querySelector('.proof-visual-sheet').getBoundingClientRect();
+                        return {heroBottom:hero.bottom,sheetBottom:sheet.bottom};
+                    }""")
+                    assert proof["sheetBottom"] <= proof["heroBottom"]+3, "Mobile proofboard is clipped by hero"
+                    mobile.screenshot(path="work/aureva-mobile.png",full_page=True)
                     expect(mobile.get_by_role("navigation").get_by_role("button",name="Chiến dịch")).to_be_visible()
                     assert mobile.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 2"),"Horizontal overflow on mobile"
                     register_donor(mobile)
                     mobile.get_by_role("navigation").get_by_role("button",name="Chiến dịch").click()
+                    expect(mobile.locator(".campaign").first).to_be_visible()
+                    assert mobile.locator(".campaign").first.evaluate("(el) => getComputedStyle(el).opacity") == "1", "Campaign card should not be invisible before scroll"
                     mobile.get_by_role("button",name="Xem chi tiết chiến dịch").click()
                     mobile.get_by_role("button",name="Ghi nhận đóng góp").click()
                     dialog=mobile.get_by_role("dialog")
