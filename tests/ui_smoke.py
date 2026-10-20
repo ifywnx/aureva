@@ -127,6 +127,16 @@ def run():
                     expect(page.get_by_role("heading",name="Bảng điều hành cứu trợ")).to_be_visible()
                     page.screenshot(path="work/aureva-workspace.png",full_page=True)
                     manager.close()
+                    offline=browser.new_context(viewport={"width":390,"height":844},is_mobile=True,has_touch=True)
+                    unavailable=offline.new_page()
+                    unavailable.route("**/api/public/dashboard",lambda route: route.fulfill(
+                        status=503,content_type="application/json",
+                        body='{"detail":"Không thể kết nối database thử nghiệm"}'))
+                    unavailable.goto(BASE,wait_until="networkidle")
+                    expect(unavailable.get_by_role("heading",name="Chưa kết nối được dữ liệu công khai")).to_be_visible()
+                    expect(unavailable.get_by_role("button",name="Thử kết nối lại")).to_be_visible()
+                    expect(unavailable.get_by_role("heading",name="Một hành động tử tế. Một hành trình rõ ràng.")).to_be_visible()
+                    offline.close()
                     donor=browser.new_context(viewport={"width":390,"height":844},is_mobile=True,has_touch=True)
                     mobile=donor.new_page()
                     mobile.goto(BASE,wait_until="networkidle")
