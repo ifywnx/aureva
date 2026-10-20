@@ -19,6 +19,7 @@ def test_demo_closed_in_production_even_with_flag(env, monkeypatch):
 
 
 def test_demo_one_tap_change_role_without_credentials(env, monkeypatch):
+    monkeypatch.setenv('AUREVA_DB_SCHEMA', 'aureva_preview')
     monkeypatch.setattr(demo, 'enabled', lambda: True)
     web = TestClient(a.app, base_url=BASE, headers={'Origin': BASE, 'X-Aureva-Request': '1'})
     assert web.get('/api/demo/status').json()['enabled'] is True
@@ -81,6 +82,7 @@ def test_demo_approver_cannot_touch_normal_campaigns(env, monkeypatch):
         'amount':1000,'purpose':'Test approval restrictions','vendor':'Normal manager',
     })
     assert expense.status_code == 201
+    monkeypatch.setenv('AUREVA_DB_SCHEMA', 'aureva_preview')
     monkeypatch.setattr(demo, 'enabled', lambda: True)
     web = TestClient(a.app, base_url=BASE, headers={'Origin': BASE, 'X-Aureva-Request':'1'})
     assert web.post('/api/demo/switch',json={'role':'approver'}).status_code == 200
@@ -90,6 +92,7 @@ def test_demo_approver_cannot_touch_normal_campaigns(env, monkeypatch):
 
 
 def test_demo_switch_rejects_cross_site_and_invalid_role(env, monkeypatch):
+    monkeypatch.setenv('AUREVA_DB_SCHEMA', 'aureva_preview')
     monkeypatch.setattr(demo, 'enabled', lambda: True)
     web = TestClient(a.app,base_url=BASE,headers={'X-Aureva-Request':'1'})
     assert web.post('/api/demo/switch', json={'role':'manager'}).status_code == 403
