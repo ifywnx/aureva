@@ -6,6 +6,17 @@
 <meta name="theme-color" content="#0B2B54"/>
 <meta name="robots" content="noindex,nofollow"/>
 <title>AUREVA · Triển khai hợp đồng Sepolia</title>
+<script>
+  // Remove ChatGPT's presentation-only referral parameter from the address bar.
+  // Preserve routes, fragments and every unrelated query value.
+  try {
+    const address = new URL(window.location.href);
+    if (address.searchParams.get('utm_source') === 'chatgpt.com') {
+      address.searchParams.delete('utm_source');
+      window.history.replaceState(window.history.state, '', address.pathname + address.search + address.hash);
+    }
+  } catch { /* Do not block the page if history is unavailable. */ }
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
 :root{font-family:'Be Vietnam Pro',system-ui,sans-serif;color:#132f59;background:#f4f8ff}
