@@ -1,0 +1,211 @@
+/* AUREVA unified Vietnamese typography · Preview-first.
+   One consistent Vietnamese-capable family across the product.
+   Retain monospace only for hashes and code. */
+:root{
+  --aureva-type:'Be Vietnam Pro',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --aureva-type-code:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+body,.identity-shell{
+  font-family:var(--aureva-type);
+  font-synthesis:none;
+  font-kerning:normal;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+.identity-shell :where(*){
+  font-family:var(--aureva-type)!important;
+}
+.identity-shell :is(pre,code,kbd,samp,.hash){
+  font-family:var(--aureva-type-code)!important;
+  font-variant-ligatures:none;
+}
+.identity-shell :is(h1,h2,h3,h4,h5,h6){
+  font-weight:800;
+  letter-spacing:-.035em;
+  text-wrap:pretty;
+}
+.identity-shell :is(p,li,dd,.description){
+  line-height:1.75;
+}
+.identity-shell :is(button,input,textarea,select){
+  font-synthesis:none;
+  letter-spacing:normal;
+}
+.identity-shell button{
+  line-height:1.45;
+}
+.identity-shell .brand-wordmark{
+  font-size:22px;
+  line-height:1.18;
+  letter-spacing:.055em;
+  font-weight:800;
+}
+.identity-shell .brand-wordmark small{
+  font-size:9px;
+  line-height:1.35;
+  letter-spacing:0;
+  font-weight:600;
+}
+.identity-shell .site-nav button{
+  font-size:11.5px;
+  font-weight:700;
+  letter-spacing:-.01em;
+  line-height:1.45;
+}
+.identity-shell .site-user strong{
+  font-size:12px;
+  line-height:1.45;
+}
+.identity-shell .site-user small{
+  font-size:10px;
+  margin-top:3px;
+  line-height:1.45;
+}
+.identity-shell .btn{
+  font-size:12px;
+  line-height:1.5;
+}
+.identity-shell .v5-hero h1{
+  letter-spacing:-.042em;
+  line-height:1.28;
+}
+.identity-shell .v5-hero h1 em{
+  letter-spacing:inherit;
+  line-height:inherit;
+}
+.identity-shell .v5-hero p{
+  font-size:13px;
+  line-height:1.9;
+}
+.identity-shell :is(.eyebrow,.v5-overline,.journey-kicker,.v5-tech-overline){
+  letter-spacing:.075em;
+  line-height:1.65;
+}
+.identity-shell .v5-stat-lead strong{
+  font-size:13px;
+  line-height:1.55;
+}
+.identity-shell .v5-stat-lead small{
+  font-size:10px;
+  line-height:1.55;
+}
+.identity-shell .v5-stat>span{
+  font-size:11px;
+  line-height:1.5;
+}
+.identity-shell .v5-stat strong{
+  font-size:clamp(17px,1.5vw,23px);
+  line-height:1.45;
+  letter-spacing:-.025em;
+  font-variant-numeric:tabular-nums;
+}
+.identity-shell .v5-hero-checks span,
+.identity-shell .v5-photo-glass small{
+  font-size:10.5px;
+  line-height:1.5;
+}
+.identity-shell .journey-flow-heading h2,
+.identity-shell .journey-focus-copy h3{
+  letter-spacing:-.035em;
+}
+.identity-shell .journey-flow-heading p,
+.identity-shell .journey-focus-copy>p{
+  font-size:12px;
+  line-height:1.8;
+}
+.identity-shell .journey-step strong{
+  font-size:11px;
+  line-height:1.5;
+}
+.identity-shell .journey-step-number{
+  font-size:9.5px;
+}
+.identity-shell .journey-focus-index{
+  font-size:11px;
+  letter-spacing:.05em;
+}
+.identity-shell .journey-proof-content strong{
+  font-size:13px;
+  line-height:1.55;
+}
+.identity-shell .journey-proof-content>span{
+  font-size:10px;
+  line-height:1.6;
+}
+.identity-shell .journey-proof-content>small{
+  font-size:9px;
+  line-height:1.4;
+}
+.identity-shell .aureva-chat-heading h2{
+  font-size:23px;
+  line-height:1.3;
+  letter-spacing:-.035em;
+}
+.identity-shell .aureva-chat-brow,
+.identity-shell .aureva-chat-date,
+.identity-shell .aureva-chat-starters>span{
+  font-size:9px;
+  letter-spacing:.07em;
+}
+.identity-shell .aureva-chat-desc,
+.identity-shell .aureva-chat-trust{
+  font-size:10.5px;
+  line-height:1.5;
+}
+.identity-shell .aureva-chat-bubble{
+  font-size:12px;
+  line-height:1.7;
+  font-weight:500;
+}
+.identity-shell .aureva-chat-starters button{
+  font-size:11px;
+  line-height:1.55;
+}
+.identity-shell .aureva-chat-compose textarea{
+  font-size:12px;
+  line-height:1.6;
+}
+.identity-shell .aureva-chat-error{
+  font-size:11px;
+  line-height:1.65;
+}
+.identity-shell .aureva-chat-footnote span,
+.identity-shell .aureva-chat-footnote button,
+.identity-shell .aureva-chat-bottom p{
+  font-size:9.5px;
+  line-height:1.5;
+}
+.identity-shell .aureva-demo-label{
+  font-size:10px;
+  line-height:1.4;
+}
+.identity-shell .aureva-demo-label small{
+  font-size:9px;
+  line-height:1.45;
+}
+.identity-shell .aureva-demo-label-badge{
+  font-size:10px;
+  line-height:1.35;
+}
+.identity-shell .aureva-demo-role{
+  font-size:11px;
+  line-height:1.4;
+}
+@media(max-width:960px){
+  .identity-shell .site-nav button{font-size:10.5px}
+  .identity-shell .brand-wordmark{font-size:20px}
+  .identity-shell .v5-hero h1{letter-spacing:-.038em}
+}
+@media(max-width:720px){
+  .identity-shell .v5-hero h1{line-height:1.25}
+  .identity-shell .v5-hero p{font-size:12px;line-height:1.8}
+  .identity-shell .journey-flow-heading p,
+  .identity-shell .journey-focus-copy>p{font-size:11.5px}
+  .identity-shell .journey-step strong{font-size:10px}
+  .identity-shell .aureva-demo-role{font-size:9px}
+  .identity-shell .aureva-demo-label-badge{font-size:9px}
+  .identity-shell .brand-wordmark small{font-size:8.5px}
+}
+@media(max-width:400px){
+  .identity-shell .aureva-demo-role{font-size:8.5px}
+}
