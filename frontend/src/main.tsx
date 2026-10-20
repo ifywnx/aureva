@@ -124,6 +124,7 @@ function App(){
    onCreateCampaign={()=>open('campaign')}
    onProposeExpense={c=>open('expense',c)}
    onConfirmDonation={id=>void run(async()=>{await api('/donations/'+id+'/confirm',{});await refresh();setNotice('Đã xác nhận số tiền thực nhận và cập nhật số liệu.');})}
+    onRejectDonation={(id,reason)=>void run(async()=>{await api('/donations/'+id+'/reject',{reason});await refresh();setNotice('Đã từ chối khai báo chưa đối soát và lưu lý do vào nhật ký.');})}
    onDecision={decision}
    onRefresh={()=>refresh()}
    onOpenCampaign={id=>{const campaign=data?.campaigns.find(c=>c.id===id);if(campaign)void inspect(campaign);else setNotice('Không tìm thấy chiến dịch trong dữ liệu công khai.');}}
