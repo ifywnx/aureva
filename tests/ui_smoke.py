@@ -1,5 +1,6 @@
 """Browser smoke tests against a local SQLite instance; NEVER use production credentials."""
 import os
+import json
 import subprocess
 import sys
 import tempfile
@@ -172,6 +173,33 @@ def run():
                     assert not ('alch_' in wallet_page.content()), 'Alchemy RPC key must not appear in browser HTML'
                     wallet.close()
                     manager.close()
+                    # Demo switcher should be usable in one tap without credentials;
+                    # provider/network responses are mocked only in the browser UI
+                    # test, with server-side switching tested separately in SQLite.
+                    demo_browser=browser.new_context(viewport={"width":1250,"height":850})
+                    demonstration=demo_browser.new_page()
+                    demonstration.route("**/api/demo/status",lambda route: route.fulfill(
+                        status=200,content_type="application/json",body='{"enabled":true}'))
+                    demonstration.route("**/api/workspace",lambda route: route.fulfill(
+                        status=200,content_type="application/json",body='{"donations":[],"expenses":[]}'))
+                    def fake_demo_switch(route):
+                        role=route.request.post_data_json['role']
+                        route.fulfill(status=200,content_type="application/json",
+                            body=json.dumps({"id":"aureva_demo_"+role+"_v1","name":"DEMO · "+role,
+                                             "email":"preview-"+role+"@aureva.invalid",
+                                             "role":role,"demo":True}))
+                    demonstration.route("**/api/demo/switch",fake_demo_switch)
+                    demonstration.goto(BASE,wait_until="networkidle")
+                    expect(demonstration.get_by_role("button",name="Đăng nhập",exact=True)).to_be_visible()
+                    expect(demonstration.get_by_role("button",name="Đổi sang tài khoản demo Người phụ trách")).to_be_visible()
+                    demonstration.get_by_role("button",name="Đổi sang tài khoản demo Người phụ trách").click()
+                    expect(demonstration.locator("header .site-user strong")).to_have_text("DEMO · manager")
+                    expect(demonstration.get_by_role("heading",name="Bảng điều hành cứu trợ")).to_be_visible()
+                    demonstration.get_by_role("button",name="Đổi sang tài khoản demo Người đóng góp").click()
+                    expect(demonstration.locator("header .site-user strong")).to_have_text("DEMO · donor")
+                    demonstration.get_by_role("button",name="Đổi sang tài khoản demo Người phê duyệt").click()
+                    expect(demonstration.locator("header .site-user strong")).to_have_text("DEMO · approver")
+                    demo_browser.close()
                     offline=browser.new_context(viewport={"width":390,"height":844},is_mobile=True,has_touch=True)
                     unavailable=offline.new_page()
                     unavailable.route("**/api/public/dashboard",lambda route: route.fulfill(
@@ -184,7 +212,11 @@ def run():
                     offline.close()
                     donor=browser.new_context(viewport={"width":390,"height":844},is_mobile=True,has_touch=True)
                     mobile=donor.new_page()
+                    mobile.route("**/api/demo/status",lambda route: route.fulfill(
+                        status=200,content_type="application/json",body='{"enabled":true}'))
                     mobile.goto(BASE,wait_until="networkidle")
+                    expect(mobile.get_by_role("button",name="Đổi sang tài khoản demo Người phê duyệt")).to_be_visible()
+                    assert mobile.locator(".aureva-demo-bar").evaluate("(el)=>el.getBoundingClientRect().right <= window.innerWidth + 2 && el.getBoundingClientRect().left >= -2"), "Mobile demo switcher must fit viewport"
                     mobile.get_by_role("button",name="Mở trợ lý AI AUREVA").click()
                     mobile_chat=mobile.get_by_role("dialog",name="Trợ lý AI AUREVA")
                     expect(mobile_chat).to_be_visible()
