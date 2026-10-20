@@ -67,7 +67,7 @@ export function EvidencePanel({id,status,document,manager,onRefresh,attestation,
    </div>}
    {document.warnings.length>0?<div className="warnings warnings-v3"><div><ShieldAlert size={18}/><b>{document.warnings.length} điểm cần người có thẩm quyền xác minh</b></div><ul>{document.warnings.map((w,i)=><li key={i}>{w}</li>)}</ul></div>:analyzed&&<div className="ai-safe"><CheckCircle2 size={17}/> Chưa phát hiện chênh lệch theo quy tắc hiện tại. Điều này không chứng minh hóa đơn là thật.</div>}
    {document.ai_error&&<p role="alert" className="alert error">{document.ai_error}</p>}
-   {status==='pending'&&!analyzed&&<div className="ai-action"><p className="muted"><LockKeyhole size={15}/> Nội dung chứng từ sẽ được gửi đến Google Gemini khi bạn bấm phân tích. Hãy che thông tin cá nhân không cần thiết.</p><button disabled={busy||document.ai_status==='processing'} className="btn primary" onClick={()=>execute(()=>request('/expenses/'+id+'/analyze'))}><ScanText size={16}/>{busy?'Đang phân tích…':document.ai_status==='processing'?'Đang xử lý':'Phân tích chứng từ bằng AI'}</button></div>}
+   {status==='pending'&&!analyzed&&<div className="ai-action"><p className="muted"><LockKeyhole size={15}/> Nội dung chứng từ sẽ được gửi tới OpenAI API khi bạn bấm phân tích. Hãy che thông tin cá nhân không cần thiết.</p><button disabled={busy||document.ai_status==='processing'} className="btn primary" onClick={()=>execute(()=>request('/expenses/'+id+'/analyze'))}><ScanText size={16}/>{busy?'Đang phân tích…':document.ai_status==='processing'?'Đang xử lý':'Phân tích bằng OpenAI'}</button></div>}
   </>}
   {error&&<p role="alert" className="alert error">{error}</p>}
   {attestation&&<ChainActions id={id} state={attestation} onRefresh={onRefresh} editable/>}
