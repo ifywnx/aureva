@@ -6,7 +6,6 @@ type Metrics={raised:number;spent:number;contribution_count:number;campaigns:{id
 const fmt=(n:number)=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:0}).format(n);
 const vietnamRelief='https://images.pexels.com/photos/32799179/pexels-photo-32799179.jpeg?auto=compress&cs=tinysrgb&w=1400&h=1600&fit=crop';
 const vietnamFlood='https://images.pexels.com/photos/34959205/pexels-photo-34959205.jpeg?auto=compress&cs=tinysrgb&w=1400';
-const vietnamYouth='https://images.pexels.com/photos/33670808/pexels-photo-33670808.jpeg?auto=compress&cs=tinysrgb&w=900';
 
 export function AurevaMark({size=35}:{size?:number}){
  return <svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden="true">
