@@ -109,6 +109,8 @@ def require(user, *roles):
 def campaign_access(db, campaign_id, user):
     campaign = db.execute('SELECT * FROM campaigns WHERE id=?', (campaign_id,)).fetchone()
     if not campaign: raise HTTPException(404, 'Không tìm thấy chiến dịch.')
+    if user['id'] == 'aureva_demo_approver_v1' and campaign['owner_id'] != 'aureva_demo_manager_v1':
+        raise HTTPException(403, 'Tài khoản trình diễn chỉ truy cập được chiến dịch demo.')
     if user['role'] != 'approver' and campaign['owner_id'] != user['id']:
         raise HTTPException(403, 'Bạn không phụ trách chiến dịch này.')
     return campaign
@@ -234,8 +236,9 @@ def workspace(user=Depends(current_user)):
             donations=db.execute('SELECT d.*, c.title AS campaign_title FROM donations d JOIN campaigns c ON c.id=d.campaign_id WHERE d.donor_id=? ORDER BY d.created DESC',(user['id'],)).fetchall()
             expenses=[]
         else:
-            where=' WHERE c.owner_id=?' if user['role']=='manager' else ''
-            args=(user['id'],) if user['role']=='manager' else ()
+            demo_approver = user['id'] == 'aureva_demo_approver_v1'
+            where = ' WHERE c.owner_id=?' if (user['role']=='manager' or demo_approver) else ''
+            args = ('aureva_demo_manager_v1',) if demo_approver else (user['id'],) if user['role']=='manager' else ()
             donations=db.execute('SELECT d.*, c.title AS campaign_title FROM donations d JOIN campaigns c ON c.id=d.campaign_id'+where+' ORDER BY d.created DESC',args).fetchall()
             expenses=db.execute('SELECT e.*, c.title AS campaign_title FROM expenses e JOIN campaigns c ON c.id=e.campaign_id'+where+' ORDER BY e.created DESC',args).fetchall()
     from backend.evidence import doc_public
