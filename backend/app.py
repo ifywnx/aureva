@@ -301,6 +301,8 @@ from backend.activity import register as register_activity
 register_activity(app)
 from backend.assistant import register as register_assistant
 register_assistant(app)
+from backend.demo import register as register_demo
+register_demo(app)
 
 dist=ROOT/'frontend/dist'
 if dist.exists():
