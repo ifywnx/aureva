@@ -22,6 +22,7 @@ function walletProvider():WalletProvider|null{
 type PrepareWallet={chain_id:number;contract:string;owner:string;digest:string;data:string};
 export function ChainActions({id,state,onRefresh,editable}:{id:string;state:Attestation|ReportInfo;onRefresh:()=>Promise<void>;editable:boolean}){
  const[busy,setBusy]=useState(false),[error,setError]=useState(''),[localTx,setLocalTx]=useState('');
+ const[verifyBusy,setVerifyBusy]=useState(false),[verification,setVerification]=useState('');
  async function act(action:string){setBusy(true);setError('');try{await request('/attestations/'+id+'/'+action);await onRefresh()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
  async function sync(tx:string){
    if(!/^0x[0-9a-fA-F]{64}$/.test(tx))throw Error('TX hash không hợp lệ.');
@@ -61,6 +62,20 @@ export function ChainActions({id,state,onRefresh,editable}:{id:string;state:Atte
     setError(e instanceof Error?e.message:'Không thể xác nhận giao dịch.');
   }finally{setBusy(false)}
  }
+ async function verifyOnChain(){
+  setVerifyBusy(true);setVerification('');
+  try{
+   const response=await fetch('/api/public/attestations/'+id+'/verify-chain',{credentials:'same-origin',cache:'no-store'});
+   const result=await response.json().catch(()=>null);
+   if(!response.ok)throw Error(typeof result?.detail==='string'?result.detail:'Không kết nối được tới Sepolia.');
+   if(!result||result.digest!==state.digest)throw Error('Mã băm bản ghi không khớp dữ liệu hiển thị.');
+   if(result.payload_valid!==true)throw Error('Dữ liệu lưu trữ đã thay đổi; mã SHA-256 không khớp.');
+   setVerification(Number(result.recorded_at)>0
+     ?'Đã tìm thấy mã SHA-256 khớp trên hợp đồng Sepolia. Đây là bằng chứng toàn vẹn, không xác minh việc chuyển tiền.'
+     :'Bản ghi còn toàn vẹn trong cơ sở dữ liệu, nhưng chưa được ghi trên Sepolia.');
+  }catch(e){setVerification(e instanceof Error?e.message:'Không kiểm tra được Blockchain.');}
+  finally{setVerifyBusy(false)}
+ }
  const confirmed=state.status==='confirmed';
  return <div className="chain-panel chain-v3">
   <div className="chain-v3-header"><div className="chain-v3-emblem"><Fingerprint size={20}/></div><div><strong>Minh chứng Blockchain</strong><small>Ký bằng MetaMask, máy chủ kiểm tra dữ liệu thực trên Sepolia</small></div><span className={'badge '+(confirmed?'confirmed':'pending')}>{confirmed?<CheckCircle2 size={13}/>:<ShieldCheck size={13}/>} {chainStates[state.status]??state.status}</span></div>
@@ -73,11 +88,13 @@ export function ChainActions({id,state,onRefresh,editable}:{id:string;state:Atte
    <a href={'/api/public/attestations/'+id} target="_blank" rel="noreferrer">Xem dữ liệu xác thực <ArrowUpRight size={14}/></a>
    {state.tx_hash&&<a href={'https://sepolia.etherscan.io/tx/'+state.tx_hash} target="_blank" rel="noreferrer">Kiểm tra trên Etherscan <ExternalLink size={14}/></a>}
    {localTx&&!state.tx_hash&&<a href={'https://sepolia.etherscan.io/tx/'+localTx} target="_blank" rel="noreferrer">Xem TX vừa gửi <ExternalLink size={14}/></a>}
+   <button disabled={verifyBusy} className="btn light" onClick={verifyOnChain}><ShieldCheck size={15}/>{verifyBusy?'Đang xác minh…':'Xác minh trực tiếp'}</button>
    {editable&&state.status==='pending'&&!localTx&&<button disabled={busy} className="btn light" onClick={signWithWallet}>{busy?'Đang xử lý…':'Ghi dấu qua MetaMask'}</button>}
    {editable&&localTx&&!state.tx_hash&&<button disabled={busy} className="btn light" onClick={async()=>{setBusy(true);setError('');try{await sync(localTx)}catch(e){setError((e as Error).message)}finally{setBusy(false)}}}>Đồng bộ TX đã gửi</button>}
    {editable&&(['signed','submitted'].includes(state.status))&&<button disabled={busy} className="btn light" onClick={()=>act('refresh')}>{busy?'Đang kiểm tra…':'Kiểm tra xác nhận'}</button>}
   </div>
   {error&&<p role="alert" className="alert error">{error}</p>}
+  {verification&&<p role="status" className="chain-verify-result"><ShieldCheck size={16}/>{verification}</p>}
  </div>;
 }
 function DocumentPreview({expenseId,filename,mime}:{expenseId:string;filename:string;mime:string}){
