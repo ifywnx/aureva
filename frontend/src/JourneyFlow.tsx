@@ -26,7 +26,7 @@ export function JourneyFlow({onTransparency}:{onTransparency:()=>void}){
  const [active,setActive]=useState(0);
  const item=stages[active];
  const Icon=item.icon;
- return <section className="journey-flow" aria-labelledby="journey-flow-title">
+ return <section id="journey-flow" className="journey-flow" aria-labelledby="journey-flow-title">
    <div className="journey-flow-heading">
      <div>
        <span className="journey-kicker"><Waypoints size={16}/> AUREVA FLOW / 06 CHẶNG MINH BẠCH</span>
