@@ -90,7 +90,7 @@ def run():
                     expect(page.locator(".hero")).to_be_visible()
                     login(page,"manager@test.vn")
                     page.get_by_role("navigation").get_by_role("button",name="Chiến dịch").click()
-                    page.get_by_role("button",name="Tạo chiến dịch").click()
+                    page.get_by_role("button",name="Tạo chiến dịch",exact=True).click()
                     dialog=page.get_by_role("dialog")
                     dialog.locator('input[name="title"]').fill("Cứu trợ Quảng Trị minh bạch")
                     dialog.locator('input[name="location"]').fill("Quảng Trị")
