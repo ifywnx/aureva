@@ -10,14 +10,13 @@ import {PublicIntro,TransparencyHub} from './AurevaStory';
 import './style.css';
 import './identity.css';
 import './premium.css';
-import {EvidencePanel,Reports,type DocumentInfo,type Attestation,type ReportInfo} from './Evidence';
+import {Reports,type DocumentInfo,type Attestation,type ReportInfo} from './Evidence';
 type User={id:string;name:string;email:string;role:'donor'|'manager'|'approver'};
 type Campaign={id:string;title:string;description:string;location:string;target:number;raised:number;spent:number;owner_id:string;manager_name:string;contribution_count:number};
 type RecordItem={id:string;campaign_id:string;campaign_title:string;amount:number;status:string;reference?:string;purpose?:string;vendor?:string;reason?:string;created:string;document?:DocumentInfo|null;attestation?:Attestation|null};
 type Dashboard={campaigns:Campaign[];raised:number;spent:number;contribution_count:number;integrations:{ai:string;blockchain:string}};
 type Detail={campaign:Campaign;donations:RecordItem[];expenses:RecordItem[]};
 const money=(v:number)=>new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(v);
-const roles={donor:'Người đóng góp',manager:'Người phụ trách',approver:'Người phê duyệt'};
 const statuses:Record<string,string>={pending:'Chờ xử lý',confirmed:'Đã đối soát',approved:'Đã duyệt',rejected:'Từ chối'};
 async function api<T>(path:string,body?:unknown):Promise<T>{const r=await fetch('/api'+path,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-Aureva-Request':'1'},credentials:'same-origin',body:body===undefined?undefined:JSON.stringify(body)});const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(typeof d?.detail==='string'?d.detail:r.status>=500?'Máy chủ tạm thời chưa kết nối được dữ liệu. Vui lòng thử lại sau.':'Thông tin chưa hợp lệ. Vui lòng kiểm tra các trường.');if(d===null)throw new Error('Máy chủ trả về dữ liệu không hợp lệ. Vui lòng thử lại sau.');return d as T;}
 function App(){
