@@ -1,4 +1,4 @@
-import {useState,type FormEvent,type ReactNode} from 'react';
+import {useState,type FormEvent} from 'react';
 import {Activity, ArrowRight, ArrowUpRight, CheckCircle2, CircleAlert, ClipboardCheck, FileClock, FileText, HeartHandshake, LayoutDashboard, Plus, SearchCheck, ShieldCheck, Wallet} from 'lucide-react';
 import {ContributionTrail} from './AurevaNavigation';
 import {EvidencePanel,type DocumentInfo,type Attestation} from './Evidence';
