@@ -2,6 +2,7 @@ import {useState,type FormEvent} from 'react';
 import {Activity, ArrowRight, ArrowUpRight, CheckCircle2, CircleAlert, ClipboardCheck, FileClock, FileText, HeartHandshake, LayoutDashboard, Plus, SearchCheck, ShieldCheck, Wallet} from 'lucide-react';
 import {ContributionTrail} from './AurevaNavigation';
 import {EvidencePanel,type DocumentInfo,type Attestation} from './Evidence';
+import {ApprovalForm} from './ApprovalForm';
 
 type Campaign={id:string;title:string;description:string;location:string;target:number;raised:number;spent:number;owner_id:string;manager_name:string;contribution_count:number;cover_url:string|null};
 type RecordItem={id:string;campaign_id:string;campaign_title:string;amount:number;status:string;reference?:string;purpose?:string;vendor?:string;reason?:string;created:string;document?:DocumentInfo|null;attestation?:Attestation|null};
@@ -48,7 +49,7 @@ export function WorkspaceConsole({user,owned,donations,expenses,busy,onCreateCam
      <div className="expense-review-meta"><div><small>Đơn vị nhận tiền</small><b>{r.vendor??'Chưa khai báo'}</b></div><div><small>Trạng thái</small><b>{statusLabels[r.status]??r.status}</b></div></div>
      {r.reason&&<div className="expense-decision-note"><SearchCheck size={17}/> Lý do quyết định: {r.reason}</div>}
      <EvidencePanel id={r.id} amount={r.amount} vendor={r.vendor} status={r.status} document={r.document} attestation={r.attestation} manager={manager} onRefresh={onRefresh}/>
-     {approver&&r.status==='pending'&&<form className="decision work-decision" onSubmit={e=>onDecision(e,r.id)}><label>Lý do phê duyệt hoặc từ chối<input name="reason" required minLength={5} maxLength={1000} placeholder="Nêu rõ nội dung đã kiểm tra…"/></label><label>Quyết định<select name="status"><option value="approved">Phê duyệt</option><option value="rejected">Từ chối</option></select></label><button disabled={busy} className="btn primary"><ClipboardCheck size={16}/> Lưu quyết định</button><small><CircleAlert size={14}/> Phê duyệt chỉ thực hiện được khi chứng từ đã được phân tích AI.</small></form>}
+     {approver&&r.status==='pending'&&<ApprovalForm key={r.id} record={r} busy={busy} onDecision={onDecision}/>}
     </article>)}</section>}
    </div>
   </div>}
