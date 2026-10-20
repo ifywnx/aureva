@@ -1,110 +1,94 @@
-import {ArrowDownRight, ArrowRight, CheckCircle2, CircleDollarSign, Fingerprint, Heart, Leaf, ShieldCheck, Sparkles, Waves} from 'lucide-react';
+import {ArrowRight, ArrowUpRight, Check, CheckCircle2, ClipboardCheck, FileText, Fingerprint, Heart, ShieldCheck, Sparkles, Wallet, Waves} from 'lucide-react';
 import {motion, useReducedMotion} from 'framer-motion';
 
-type Metrics = {raised:number;spent:number;contribution_count:number;campaigns:{id:string}[]};
-const fmt=(amount:number)=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:0}).format(amount);
+type Metrics={raised:number;spent:number;contribution_count:number;campaigns:{id:string}[]};
+const fmt=(n:number)=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:0}).format(n);
+
 export function AurevaMark({size=35}:{size?:number}){
-  return <svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden="true">
-    <path d="M7 26.5c7-1.2 9.5-13 17-13 7.3 0 10 11.8 17 13" stroke="currentColor" strokeWidth="4.2" strokeLinecap="round"/>
-    <path d="M8 34c6.6-1.6 10-9.1 16-9.1 6.1 0 9.4 7.5 16 9.1" stroke="currentColor" strokeWidth="4.2" strokeLinecap="round" opacity=".53"/>
-    <circle cx="24" cy="9" r="3.5" fill="#FFAE91"/>
-    <circle cx="8.5" cy="26.5" r="2.3" fill="currentColor"/>
-    <circle cx="39.5" cy="26.5" r="2.3" fill="currentColor"/>
-  </svg>;
+ return <svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden="true">
+  <path d="M7 26.5c7-1.2 9.5-13 17-13 7.3 0 10 11.8 17 13" stroke="currentColor" strokeWidth="4.2" strokeLinecap="round"/>
+  <path d="M8 34c6.6-1.6 10-9.1 16-9.1 6.1 0 9.4 7.5 16 9.1" stroke="currentColor" strokeWidth="4.2" strokeLinecap="round" opacity=".53"/>
+  <circle cx="24" cy="9" r="3.5" fill="#F4A68C"/>
+  <circle cx="8.5" cy="26.5" r="2.3" fill="currentColor"/>
+  <circle cx="39.5" cy="26.5" r="2.3" fill="currentColor"/>
+ </svg>;
 }
 
-function ReliefNetwork(){
-  const reduced = useReducedMotion();
-  return <div className="relief-network" aria-hidden="true">
-    <div className="network-field"/>
-    <svg className="network-lines" viewBox="0 0 560 470" preserveAspectRatio="xMidYMid meet" fill="none">
-      <path className="network-contour" d="M35 179c93-112 155-135 259-88 105 48 153 18 236-68M-8 310c122-107 200-127 294-50 79 66 159 84 296-23M39 421c87-110 187-124 291-74 104 49 156 14 231-37"/>
-      <path className="network-path" d="M72 292Q156 182 255 239T445 137" strokeWidth="2.3" strokeDasharray="7 9"/>
-      <path className="network-path faint" d="M91 350Q165 415 286 333T487 308" strokeWidth="1.4" strokeDasharray="5 11"/>
-      <circle cx="72" cy="292" r="7" fill="#F3B594"/>
-      <circle cx="255" cy="239" r="9" fill="#B8E6DC"/>
-      <circle cx="445" cy="137" r="7" fill="#F3B594"/>
-      <circle cx="91" cy="350" r="5" fill="#B8E6DC"/>
-      <circle cx="286" cy="333" r="5" fill="#B8E6DC"/>
-    </svg>
-    <motion.div className="network-center" initial={reduced?false:{opacity:0,scale:.9}} animate={{opacity:1,scale:1}} transition={{duration:.8}}>
-      <span className="network-center-icon"><Heart size={31} strokeWidth={1.8}/></span>
-      <span className="network-center-label">MỖI ĐÓNG GÓP</span>
-      <strong>Đều có<br/>giá trị.</strong>
-      <span className="network-center-foot"><CheckCircle2 size={14}/> Rõ ràng từng bước</span>
-    </motion.div>
-    <div className="network-pill network-pill-a"><span className="network-pill-symbol"><CircleDollarSign size={16}/></span><span><b>Đối soát</b><small>Khoản tiền thực nhận</small></span></div>
-    <div className="network-pill network-pill-b"><span className="network-pill-symbol warm"><ShieldCheck size={16}/></span><span><b>Phê duyệt</b><small>Quyết định có trách nhiệm</small></span></div>
-    <div className="network-pill network-pill-c"><span className="network-pill-symbol"><Fingerprint size={16}/></span><span><b>Đối chiếu</b><small>Báo cáo và mã xác thực</small></span></div>
-    <span className="network-point point-a"/><span className="network-point point-b"/>
-  </div>;
+function ProofVisual(){
+ const reduced=useReducedMotion();
+ const stages=[
+  {name:'Khoản đóng góp',caption:'Được đối soát với tiền nhận',icon:<Wallet size={18}/>},
+  {name:'Chứng từ & cảnh báo AI',caption:'Chờ người có thẩm quyền kiểm tra',icon:<FileText size={18}/>},
+  {name:'Dấu xác thực',caption:'Xác minh trạng thái trên Sepolia',icon:<Fingerprint size={18}/>}
+ ];
+ return <motion.div className="proof-visual" aria-label="Minh họa quy trình kiểm tra, không phải dữ liệu giao dịch" initial={reduced?false:{opacity:0,y:18}} animate={{opacity:1,y:0}} transition={{duration:.7,delay:.15}}>
+  <div className="proof-halo proof-halo-one"/><div className="proof-halo proof-halo-two"/>
+  <div className="proof-visual-index">AUREVA / SYSTEM OVERVIEW <span>01 — 03</span></div>
+  <div className="proof-visual-sheet">
+   <div className="proof-sheet-heading"><span className="sheet-round-icon"><AurevaMark size={24}/></span><div><span>QUY TRÌNH KIỂM CHỨNG</span><strong>Từng bước đều có dấu vết.</strong></div><CheckCircle2 size={20} color="#407D70"/></div>
+   <div className="proof-stages">{stages.map((step,i)=><div className="proof-stage" key={i}>
+    <div className="proof-stage-symbol">{step.icon}</div>
+    <div><b>{step.name}</b><small>{step.caption}</small></div>
+    <span>{String(i+1).padStart(2,'0')}</span>
+   </div>)}</div>
+   <div className="proof-sheet-bottom"><ShieldCheck size={15}/><span>Minh họa quy trình · không thay thế bằng chứng giao dịch thật</span></div>
+  </div>
+  <div className="proof-seal"><Heart size={15} fill="currentColor"/> LAN TỎA ĐIỀU TỐT</div>
+ </motion.div>;
 }
-
 export function PublicIntro({data,onExplore,onTransparency}:{data:Metrics|null;onExplore:()=>void;onTransparency:()=>void}){
-  const reduced=useReducedMotion();
-  return <>
-    <section className="hero" aria-label="Giới thiệu AUREVA">
-      <div className="hero-copy">
-        <motion.div className="hero-topline" initial={reduced?false:{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.6}}>
-          <span className="hero-spark"><Waves size={15}/></span>
-          NỀN TẢNG MINH BẠCH CỨU TRỢ
-        </motion.div>
-        <motion.h1 initial={reduced?false:{opacity:0,y:23}} animate={{opacity:1,y:0}} transition={{duration:.7,delay:.06}}>
-          Khi sự sẻ chia<br/>có <em>đường đi rõ ràng.</em>
-        </motion.h1>
-        <motion.p initial={reduced?false:{opacity:0,y:15}} animate={{opacity:1,y:0}} transition={{duration:.7,delay:.14}}>
-          AUREVA kết nối những tấm lòng và giúp cộng đồng theo dõi số tiền đã xác nhận, khoản chi được duyệt cùng các báo cáo của từng chiến dịch.
-        </motion.p>
-        <div className="hero-actions">
-          <button className="btn primary" onClick={onExplore}>Khám phá chiến dịch <ArrowRight size={17}/></button>
-          <button className="btn story-outline" onClick={onTransparency}>Xem cách minh bạch <ArrowDownRight size={17}/></button>
-        </div>
-        <div className="hero-assurances">
-          <span><CheckCircle2 size={16}/> Không hiển thị thông tin người đóng góp</span>
-          <span><Leaf size={16}/> Chỉ cộng số tiền đã đối soát</span>
-        </div>
-      </div>
-      <ReliefNetwork/>
-      <div className="hero-corner-index" aria-hidden="true">AUREVA / 01—04</div>
-    </section>
-    <div className="story-ribbon" aria-label="Tóm tắt dữ liệu công khai">
-      <div className="ribbon-lead"><span className="ribbon-asterisk">✳</span><div><b>Sự tin tưởng đến từ dữ liệu.</b><small>Cập nhật theo trạng thái xác nhận thực tế</small></div></div>
-      <div className="ribbon-item"><small>Đóng góp đã đối soát</small><strong>{data?fmt(data.raised)+' ₫':'Đang tải…'}</strong></div>
-      <div className="ribbon-item"><small>Chi đã được duyệt</small><strong>{data?fmt(data.spent)+' ₫':'Đang tải…'}</strong></div>
-      <div className="ribbon-item"><small>Chiến dịch</small><strong>{data?fmt(data.campaigns.length):'…'}</strong></div>
+ const reduced=useReducedMotion();
+ return <>
+  <section className="hero hero-v3" aria-labelledby="hero-v3-title">
+   <div className="hero-copy">
+    <motion.div className="hero-topline" initial={reduced?false:{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.5}}>
+      <span className="hero-spark"><Waves size={15}/></span> CỨU TRỢ MINH BẠCH · CÔNG NGHỆ VÌ CỘNG ĐỒNG
+    </motion.div>
+    <motion.h1 id="hero-v3-title" initial={reduced?false:{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{duration:.58,delay:.05}}>
+      Trao gửi yêu thương,<br/><em>rõ từng đóng góp.</em>
+    </motion.h1>
+    <motion.p initial={reduced?false:{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:.5,delay:.12}}>AUREVA giúp kết nối những tấm lòng với các chiến dịch cứu trợ — nơi việc tiếp nhận, phê duyệt và công khai thu chi được đặt trong một quy trình có thể kiểm tra.</motion.p>
+    <div className="hero-actions">
+     <button className="btn primary" onClick={onExplore}>Khám phá chiến dịch <ArrowUpRight size={17}/></button>
+     <button className="btn story-outline" onClick={onTransparency}>Khám phá sự minh bạch <ArrowRight size={17}/></button>
     </div>
-  </>;
+    <div className="hero-assurances"><span><Check size={14}/> Số liệu từ database</span><span><Check size={14}/> Quyết định có dấu vết</span></div>
+   </div>
+   <ProofVisual/>
+  </section>
+  <div className="story-ribbon" aria-label="Tóm tắt dữ liệu công khai">
+   <div className="ribbon-lead"><span className="ribbon-asterisk"><Heart size={21}/></span><div><b>Minh bạch tạo dựng niềm tin</b><small>Cập nhật từ dữ liệu thật của hệ thống</small></div></div>
+   <div className="ribbon-item"><small>Đóng góp đã đối soát</small><strong>{data?fmt(data.raised)+' ₫':'Đang tải…'}</strong></div>
+   <div className="ribbon-item"><small>Chi được phê duyệt</small><strong>{data?fmt(data.spent)+' ₫':'Đang tải…'}</strong></div>
+   <div className="ribbon-item"><small>Chiến dịch cứu trợ</small><strong>{data?fmt(data.campaigns.length):'…'}</strong></div>
+  </div>
+ </>;
 }
-
 export function TransparencyHub({data,onExplore}:{data:Metrics|null;onExplore:()=>void}){
-  const percent=data&&data.raised>0?Math.min(100,Math.max(0,data.spent/data.raised*100)):0;
-  return <section className="transparency-hub">
-    <div className="detail-head transparency-heading">
-      <div className="eyebrow"><Sparkles size={16}/> CÔNG KHAI THAY VÌ CAM KẾT SUÔNG</div>
-      <h1>Mọi con số đều cần <em>lời giải thích.</em></h1>
-      <p>AUREVA tổng hợp đóng góp đã đối soát và khoản chi đã được phê duyệt. Mỗi chiến dịch có lịch sử thu chi riêng để cộng đồng tự kiểm tra.</p>
+ const percent=data&&data.raised>0?Math.min(100,Math.max(0,data.spent/data.raised*100)):0;
+ return <section className="transparency-hub">
+  <div className="detail-head transparency-heading"><div className="eyebrow"><Sparkles size={16}/> MINH BẠCH LÀ NỀN TẢNG CỦA LÒNG TIN</div><h1>Dữ liệu công khai.<br/><em>Trách nhiệm rõ ràng.</em></h1><p>Thu chi được tổng hợp từ database, tách riêng tiền đã đối soát và các khoản chi đã được phê duyệt. Mỗi chiến dịch có lịch sử để mọi người cùng kiểm tra.</p></div>
+  <div className="transparency-board">
+   <div className="transparency-chart">
+    <div className="panel-top"><span>01 / TÀI CHÍNH CÔNG KHAI</span><span className="panel-chip"><span/> DỮ LIỆU THỰC</span></div>
+    <h2>Toàn cảnh dòng tiền cứu trợ</h2>
+    <div className="money-balance">
+     <div><span>Tổng thu đã đối soát</span><b>{data?fmt(data.raised)+' ₫':'…'}</b></div>
+     <div><span>Khoản chi đã duyệt</span><b>{data?fmt(data.spent)+' ₫':'…'}</b></div>
+     <div><span>Số dư tính toán</span><b>{data?fmt(data.raised-data.spent)+' ₫':'…'}</b></div>
     </div>
-    <div className="transparency-board">
-      <div className="transparency-chart">
-        <div className="panel-top"><span>GÓC NHÌN TÀI CHÍNH</span><span className="panel-chip"><span/> DỮ LIỆU THỰC</span></div>
-        <h2>Thu – chi được thể hiện tách bạch.</h2>
-        <div className="money-balance">
-          <div><span>Tổng thu đã đối soát</span><b>{data?fmt(data.raised)+' ₫':'…'}</b></div>
-          <div><span>Khoản chi đã duyệt</span><b>{data?fmt(data.spent)+' ₫':'…'}</b></div>
-          <div><span>Số dư tính toán</span><b>{data?fmt(data.raised-data.spent)+' ₫':'…'}</b></div>
-        </div>
-        <div className="proportion-bar" role="img" aria-label={data?'Khoản chi được duyệt chiếm '+percent.toFixed(1)+'% tổng thu đã đối soát':'Chưa tải dữ liệu'}><span style={{width:percent+'%'}}/></div>
-        <div className="proportion-legend"><span><i/> Tổng đã đối soát</span><span><i/> Phần chi đã duyệt</span></div>
-        <p className="small-disclosure">“Chi đã duyệt” là quyết định phân bổ nguồn tiền, không tự động chứng minh đã chuyển tiền tại ngân hàng.</p>
-      </div>
-      <div className="transparency-ethos">
-        <span className="ethos-icon"><Fingerprint size={35}/></span>
-        <div className="eyebrow">KHÔNG CHỈ LÀ MỘT DÒNG SỐ</div>
-        <h2>Kiểm tra được.<br/><em>Đối chiếu được.</em></h2>
-        <p>Hệ thống lưu chứng từ riêng tư, hỗ trợ người phê duyệt xem cảnh báo AI, tạo báo cáo PDF và theo dõi dấu xác thực trên Sepolia khi đã được cấu hình.</p>
-        <button className="btn story-outline" onClick={onExplore}>Xem lịch sử từng chiến dịch <ArrowRight size={16}/></button>
-      </div>
-    </div>
-    <div className="transparency-disclaimer"><ShieldCheck size={17}/><p>AI chỉ hỗ trợ đọc và cảnh báo; người có trách nhiệm luôn là người đưa ra quyết định cuối cùng. Blockchain chỉ được xác nhận khi giao dịch thật có bằng chứng trên chuỗi.</p></div>
-  </section>;
+    <div className="proportion-bar" role="img" aria-label={data?'Khoản chi được duyệt chiếm '+percent.toFixed(1)+'% số tiền đã đối soát':'Chưa tải dữ liệu'}><span style={{width:percent+'%'}}/></div>
+    <div className="proportion-legend"><span><i/> Số tiền đã đối soát</span><span><i/> Khoản chi được duyệt</span></div>
+    <p className="small-disclosure">Lưu ý: “Chi đã duyệt” là quyết định phân bổ kinh phí, không phải bằng chứng xác nhận đã chuyển khoản ngân hàng.</p>
+   </div>
+   <div className="transparency-ethos">
+    <span className="ethos-icon"><ClipboardCheck size={32}/></span>
+    <div className="eyebrow">02 / CHỨNG CỨ & TRÁCH NHIỆM</div>
+    <h2>Không chỉ là<br/><em>những con số.</em></h2>
+    <p>Chứng từ được lưu riêng tư để người phê duyệt kiểm tra cảnh báo AI. Quyết định và báo cáo có dấu băm; trạng thái Blockchain chỉ được xác nhận khi giao dịch thực sự thành công trên Sepolia.</p>
+    <button className="btn story-outline" onClick={onExplore}>Xem chiến dịch & lịch sử <ArrowRight size={16}/></button>
+   </div>
+  </div>
+  <div className="transparency-disclaimer"><ShieldCheck size={17}/><p>AI hỗ trợ phân tích và phát hiện dữ liệu cần kiểm tra, không tự kết luận gian lận. Phê duyệt cuối cùng luôn thuộc về người có thẩm quyền.</p></div>
+ </section>;
 }
