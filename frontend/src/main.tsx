@@ -49,7 +49,41 @@ function App(){
  {page==='campaigns'&&<div className="campaigns-page-intro"><span className="eyebrow">NƠI NHỮNG TẤM LÒNG GẶP NHAU</span><h1>Một hành động nhỏ.<br/><em>Một thay đổi có thật.</em></h1><p>Khám phá các chiến dịch, xem tiến độ đối soát và tự kiểm tra các quyết định thu chi.</p></div>}
  <section id="campaigns" className="campaign-section"><div className="section-head"><div><div className="eyebrow">CÙNG NHAU TẠO THAY ĐỔI</div><h2>Các chiến dịch cứu trợ <span className="count">{data?.campaigns.length??0}</span></h2></div>{user?.role==='manager'&&<button className="btn primary" onClick={()=>open('campaign')}><Plus size={17}/>Tạo chiến dịch</button>}</div>{!data?<div className="empty">Đang tải dữ liệu…</div>:!data.campaigns.length?<div className="empty"><HeartHandshake size={36}/><h3>Chưa có chiến dịch nào</h3><p>Mỗi hành trình minh bạch bắt đầu bằng một chiến dịch.<br/>Người phụ trách có thể đăng nhập để tạo chiến dịch đầu tiên.</p></div>:<><div className="campaign-toolbar"><label className="campaign-search"><Search size={18}/><input value={campaignQuery} onChange={e=>setCampaignQuery(e.target.value)} aria-label="Tìm kiếm chiến dịch" placeholder="Tìm theo tên hoặc khu vực cứu trợ…"/></label><span>{visibleCampaigns.length} chiến dịch phù hợp</span></div>{!visibleCampaigns.length?<div className="empty compact">Không tìm thấy chiến dịch phù hợp. Hãy thử từ khóa khác.</div>:<div className="campaign-grid">{visibleCampaigns.map((c,i)=><motion.article className={'campaign campaign-variant-'+(i%3)} key={c.id} initial={reducedMotion?false:{opacity:0,y:22}} whileInView={{opacity:1,y:0}} viewport={{once:true,amount:.12}} whileHover={reducedMotion?undefined:{y:-6}} transition={{type:'spring',stiffness:210,damping:23}}><div className="campaign-visual" aria-hidden="true"><div className="campaign-landscape"><span className="landscape-sun"/><span className="landscape-hill hill-one"/><span className="landscape-hill hill-two"/></div><span className="campaign-visual-word">CÙNG NHAU LAN TỎA</span><span className="campaign-visual-number">{String(i+1).padStart(2,'0')}</span></div><div className="campaign-top"><MapPin size={16}/>{c.location}<span>THU CHI CÔNG KHAI</span></div><h3>{c.title}</h3><p>{c.description}</p><div className="raised"><b>{money(c.raised)}</b><span>/ {money(c.target)}</span></div><progress value={Math.min(c.raised,c.target)} max={c.target}/><div className="card-meta"><span>{c.contribution_count} đóng góp xác nhận</span><span>{Math.round(c.raised/c.target*100)}%</span></div><button className="btn light full" onClick={()=>inspect(c)}>Xem chi tiết chiến dịch <ArrowUpRight size={16}/></button></motion.article>)}</div>}</>}</section>{page==='overview'&&<><ImpactJourney/><section className="trust"><div><ShieldCheck size={22}/><h3>Dữ liệu thật. Trách nhiệm rõ ràng.</h3><p>Số liệu tổng hợp từ các khoản đóng góp đã đối soát và khoản chi đã được phê duyệt.</p></div><div className="integration"><span className="badge pending">AI · {data?.integrations.ai==='configured'?'Đã cấu hình':'Chưa cấu hình'}</span><span className="badge pending">Blockchain · {data?.integrations.blockchain==='configured'?'Đã cấu hình':'Chưa cấu hình'}</span><small>Xem trạng thái xác nhận trên từng quyết định và báo cáo.</small></div></section></>}</>}
  {page==='transparency'&&<TransparencyHub data={data} onExplore={()=>navigate('campaigns')}/>}
- {page==='detail'&&detail&&<><button className="back" onClick={()=>setPage('campaigns')}>← Tất cả chiến dịch</button><div className="detail-head"><div className="eyebrow">{detail.campaign.location}</div><h1>{detail.campaign.title}</h1><p>{detail.campaign.description}</p><small>Phụ trách: {detail.campaign.manager_name}</small></div><div className="metrics three"><Metric label="Đã đối soát" value={money(detail.campaign.raised)}/><Metric label="Chi đã duyệt" value={money(detail.campaign.spent)}/><Metric label="Số dư" value={money(detail.campaign.raised-detail.campaign.spent)}/></div><div className="actions">{!user&&<button className="btn primary" onClick={()=>open('login')}>Đăng nhập để ghi nhận đóng góp</button>}{user?.role==='donor'&&<button className="btn primary" onClick={()=>open('donation',detail.campaign)}>Ghi nhận đóng góp</button>}{user?.role==='manager'&&user.id===detail.campaign.owner_id&&<button className="btn primary" onClick={()=>open('expense',detail.campaign)}>Đề xuất khoản chi</button>}</div><h2>Lịch sử đóng góp công khai</h2><Records items={detail.donations} publicView/><h2>Quyết định thu chi</h2><Records items={detail.expenses} publicView/><Reports campaignId={detail.campaign.id} items={reports} editable={!!user&&(user.role==='approver'||(user.role==='manager'&&user.id===detail.campaign.owner_id))} onRefresh={()=>refresh()}/><p className="muted">Thông tin người đóng góp và mã chuyển khoản không hiển thị công khai. Mỗi báo cáo có trạng thái Blockchain riêng; chỉ trạng thái đã xác nhận mới là bằng chứng trên chuỗi.</p></>}
+ {page==='detail'&&detail&&<section className="campaign-detail">
+  <button className="back detail-back" onClick={()=>navigate('campaigns')}>← Quay lại danh sách chiến dịch</button>
+  <div className="detail-hero">
+    <div className="detail-hero-copy">
+      <span className="eyebrow"><MapPin size={14}/> CHIẾN DỊCH CỨU TRỢ · {detail.campaign.location}</span>
+      <h1>{detail.campaign.title}</h1>
+      <p>{detail.campaign.description}</p>
+      <span className="detail-owner"><ShieldCheck size={16}/> Phụ trách: {detail.campaign.manager_name}</span>
+    </div>
+    <div className="detail-funding">
+      <span className="eyebrow">TIẾN ĐỘ ĐÓNG GÓP ĐÃ ĐỐI SOÁT</span>
+      <strong>{money(detail.campaign.raised)}</strong>
+      <small>Mục tiêu: {money(detail.campaign.target)}</small>
+      <progress value={Math.min(detail.campaign.raised,detail.campaign.target)} max={detail.campaign.target}/>
+      <div><span>{detail.campaign.contribution_count} lượt đóng góp xác nhận</span><b>{Math.round(detail.campaign.raised/detail.campaign.target*100)}%</b></div>
+    </div>
+  </div>
+  <div className="metrics three detail-metrics">
+    <Metric label="Đóng góp đã đối soát" value={money(detail.campaign.raised)}/>
+    <Metric label="Khoản chi đã duyệt" value={money(detail.campaign.spent)}/>
+    <Metric label="Số dư tính toán" value={money(detail.campaign.raised-detail.campaign.spent)}/>
+  </div>
+  <div className="actions detail-actions">
+    {!user&&<button className="btn primary" onClick={()=>open('login')}>Đăng nhập để ghi nhận đóng góp <ArrowUpRight size={16}/></button>}
+    {user?.role==='donor'&&<button className="btn primary" onClick={()=>open('donation',detail.campaign)}>Ghi nhận đóng góp <HeartHandshake size={16}/></button>}
+    {user?.role==='manager'&&user.id===detail.campaign.owner_id&&<button className="btn primary" onClick={()=>open('expense',detail.campaign)}>Đề xuất khoản chi <Plus size={16}/></button>}
+    <span><ShieldCheck size={16}/> Thu chi được tổng hợp từ dữ liệu đã lưu</span>
+  </div>
+  <div className="detail-ledger-grid">
+    <section className="detail-ledger"><span className="eyebrow">CÔNG KHAI ĐÓNG GÓP</span><h2>Lịch sử đóng góp công khai</h2><Records items={detail.donations} publicView/></section>
+    <section className="detail-ledger"><span className="eyebrow">MINH BẠCH CHI TIÊU</span><h2>Quyết định thu chi</h2><Records items={detail.expenses} publicView/></section>
+  </div>
+  <Reports campaignId={detail.campaign.id} items={reports} editable={!!user&&(user.role==='approver'||(user.role==='manager'&&user.id===detail.campaign.owner_id))} onRefresh={()=>refresh()}/>
+  <p className="detail-disclaimer"><ShieldCheck size={17}/> Không công khai email hoặc mã chuyển khoản của người đóng góp. Mã Blockchain chỉ được xác nhận khi giao dịch Sepolia có bằng chứng thực.</p>
+ </section>}
  {page==='workspace'&&user&&<WorkspaceConsole user={user} owned={owned} donations={workspace.donations} expenses={workspace.expenses} busy={busy}
    onCreateCampaign={()=>open('campaign')}
    onProposeExpense={c=>open('expense',c)}
