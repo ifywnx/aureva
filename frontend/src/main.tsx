@@ -16,7 +16,7 @@ type Detail={campaign:Campaign;donations:RecordItem[];expenses:RecordItem[]};
 const money=(v:number)=>new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(v);
 const roles={donor:'Người đóng góp',manager:'Người phụ trách',approver:'Người phê duyệt'};
 const statuses:Record<string,string>={pending:'Chờ xử lý',confirmed:'Đã đối soát',approved:'Đã duyệt',rejected:'Từ chối'};
-async function api<T>(path:string,body?:unknown):Promise<T>{const r=await fetch('/api'+path,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-Aureva-Request':'1'},credentials:'same-origin',body:body===undefined?undefined:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(typeof d.detail==='string'?d.detail:'Thông tin chưa hợp lệ. Vui lòng kiểm tra các trường.');return d;}
+async function api<T>(path:string,body?:unknown):Promise<T>{const r=await fetch('/api'+path,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-Aureva-Request':'1'},credentials:'same-origin',body:body===undefined?undefined:JSON.stringify(body)});const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(typeof d?.detail==='string'?d.detail:r.status>=500?'Máy chủ tạm thời chưa kết nối được dữ liệu. Vui lòng thử lại sau.':'Thông tin chưa hợp lệ. Vui lòng kiểm tra các trường.');if(d===null)throw new Error('Máy chủ trả về dữ liệu không hợp lệ. Vui lòng thử lại sau.');return d as T;}
 function App(){
  const reducedMotion = useReducedMotion();
  const [user,setUser]=useState<User|null>(null),[data,setData]=useState<Dashboard|null>(null),[workspace,setWorkspace]=useState<{donations:RecordItem[];expenses:RecordItem[]}>({donations:[],expenses:[]});
