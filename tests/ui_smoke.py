@@ -126,6 +126,36 @@ def run():
                     page.get_by_role("navigation").get_by_role("button",name="Không gian làm việc").click()
                     expect(page.get_by_role("heading",name="Bảng điều hành cứu trợ")).to_be_visible()
                     page.screenshot(path="work/aureva-workspace.png",full_page=True)
+                    # Confirm the standalone MetaMask deploy screen has no auto-sign.
+                    wallet=browser.new_context(viewport={"width":1060,"height":860})
+                    wallet.add_init_script("""() => {
+                        const listeners={};
+                        window.ethereum={
+                            request:async ({method,params})=>{
+                                if(method==='eth_requestAccounts')return ['0x1111111111111111111111111111111111111111'];
+                                if(method==='wallet_switchEthereumChain')return null;
+                                if(method==='eth_chainId')return '0xaa36a7';
+                                if(method==='eth_getBalance')return '0xb1a2bc2ec50000';
+                                if(method==='eth_sendTransaction'){window.__walletSent=true;return '0x'+'a'.repeat(64)}
+                                if(method==='eth_getTransactionReceipt')return {status:'0x1',contractAddress:'0x'+'b'.repeat(40)};
+                                throw Error('Unexpected wallet request: '+method);
+                            },
+                            on:(name,cb)=>{listeners[name]=cb}
+                        };
+                    }""")
+                    wallet_page=wallet.new_page()
+                    wallet_page.goto(BASE+'/deploy-sepolia.html',wait_until='networkidle')
+                    expect(wallet_page.get_by_role('heading',name='Triển khai Blockchain. Không cần chia sẻ khóa ví.')).to_be_visible()
+                    assert wallet_page.get_by_role('button',name='2. Deploy smart contract').is_disabled()
+                    assert wallet_page.evaluate("!window.__walletSent"), 'Wallet signing must never start automatically'
+                    wallet_page.get_by_role('button',name='1. Kết nối MetaMask').click()
+                    expect(wallet_page.get_by_text('Ethereum Sepolia (11155111)')).to_be_visible()
+                    assert wallet_page.get_by_role('button',name='2. Deploy smart contract').is_enabled()
+                    wallet_page.get_by_role('button',name='2. Deploy smart contract').click()
+                    expect(wallet_page.locator('#contract')).to_have_text('0x'+'b'*40,timeout=12000)
+                    assert wallet_page.evaluate("window.__walletSent") is True
+                    assert not ('alch_' in wallet_page.content()), 'Alchemy RPC key must not appear in browser HTML'
+                    wallet.close()
                     manager.close()
                     offline=browser.new_context(viewport={"width":390,"height":844},is_mobile=True,has_touch=True)
                     unavailable=offline.new_page()
