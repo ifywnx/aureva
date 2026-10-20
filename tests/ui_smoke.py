@@ -91,6 +91,10 @@ def run():
                     }"""), "When no campaigns exist, show the technology story before the empty campaign list"
                     expect(page.get_by_role("heading",name="Một luồng cứu trợ. Hai lớp kiểm chứng.")).to_be_visible()
                     expect(page.locator(".v5-proof-core")).to_be_visible()
+                    assert page.locator(".v5-tech-features article").count()==3
+                    assert page.locator(".v5-tech-features article").evaluate_all(
+                        "(els)=>els.every(el=>getComputedStyle(el).opacity==='1')"
+                    ), "AI, Blockchain and PDF cards must be visible before scrolling"
                     assert page.locator(".v5-proof-status").inner_text().find("Chưa cấu hình") >= 0, "CI must not fabricate live AI/chain configuration"
                     page.get_by_role("navigation").get_by_role("button",name="Minh bạch").click()
                     expect(page.get_by_role("heading",name="Minh bạch từ mỗi quyết định.")).to_be_visible()
