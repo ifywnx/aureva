@@ -105,3 +105,62 @@ def test_demo_switch_rejects_cross_site_and_invalid_role(env, monkeypatch):
     })
     assert ok.post('/api/demo/switch',json={'role':'admin'}).status_code == 422
     assert ok.post('/api/demo/switch',json={'role':'manager','email':'admin@example.com'}).status_code == 422
+
+
+def test_demo_donation_simulates_without_payment_and_cannot_reach_real_campaigns(env, monkeypatch):
+    # Even in a preview, a simulated donor must not write to normal campaigns.
+    real = client('manager')
+    normal_cid = campaign(real)
+    monkeypatch.setenv('AUREVA_DB_SCHEMA', 'aureva_preview')
+    monkeypatch.setattr(demo, 'enabled', lambda: True)
+    web = TestClient(a.app, base_url=BASE, headers={
+        'Origin': BASE, 'X-Aureva-Request': '1',
+    })
+    assert web.post('/api/demo/switch', json={'role':'manager'}).status_code==200
+    created=web.post('/api/campaigns',json={
+        'title':'Cứu trợ bài tập cuối kỳ',
+        'location':'Quảng Trị',
+        'description':'Chiến dịch mô phỏng phục vụ môn học',
+        'target':1000000,
+    })
+    assert created.status_code==201,created.text
+    demo_cid=created.json()['id']
+    assert web.post('/api/demo/switch',json={'role':'donor'}).status_code==200
+    # This endpoint deliberately has NO bank reference or payment fields.
+    payload={'campaign_id':demo_cid,'amount':350000}
+    first=web.post('/api/demo/donations',json=payload)
+    assert first.status_code==201,first.text
+    assert first.json()['simulated'] is True
+    assert first.json()['payment_processed'] is False
+    assert first.json()['status']=='pending'
+    assert web.get('/api/public/dashboard').json()['raised']==0
+    assert web.post('/api/demo/donations',json={**payload,'payment_card':'4111111111111111'}).status_code==422
+    assert web.post('/api/demo/donations',json={'campaign_id':normal_cid,'amount':1000}).status_code==403
+    assert web.post(f'/api/campaigns/{normal_cid}/donations',
+        json={'amount':1000,'reference':'DEMO-CROSS-CAMPAIGN'}).status_code==403
+    assert web.post('/api/demo/donations',json={'campaign_id':'not-an-id','amount':1}).status_code==422
+    assert web.post('/api/demo/donations',json={'campaign_id':demo_cid,'amount':-1}).status_code==422
+    with a.connect() as db:
+        donation=db.execute('SELECT * FROM donations WHERE id=?',(first.json()['id'],)).fetchone()
+        assert donation['reference'].startswith('DEMO-')
+        assert donation['status']=='pending'
+        assert donation['donor_id']=='aureva_demo_donor_v1'
+        assert db.execute('SELECT COUNT(*) FROM donations WHERE campaign_id=?',(normal_cid,)).fetchone()[0]==0
+    # Origin is essential for this sensitive preview-only convenience endpoint.
+    without_origin=TestClient(a.app,base_url=BASE,headers={'X-Aureva-Request':'1'})
+    assert without_origin.post('/api/demo/donations',json=payload).status_code==403
+    assert web.post('/api/demo/switch',json={'role':'approver'}).status_code==200
+    assert web.post('/api/demo/donations',json=payload).status_code==403
+    assert web.post('/api/demo/switch',json={'role':'manager'}).status_code==200
+    assert web.post('/api/donations/'+first.json()['id']+'/confirm',json={}).status_code==200
+    assert web.get('/api/public/dashboard').json()['raised']==350000
+
+
+def test_demo_payment_endpoint_is_disabled_outside_preview(env,monkeypatch):
+    monkeypatch.setenv('AUREVA_DEMO_SWITCH','1')
+    monkeypatch.setenv('VERCEL_ENV','production')
+    monkeypatch.setenv('AUREVA_DB_SCHEMA','aureva_preview')
+    browser=TestClient(a.app,base_url=BASE,headers={'Origin':BASE,'X-Aureva-Request':'1'})
+    assert browser.post('/api/demo/donations',json={
+        'campaign_id':'a'*24,'amount':100000,
+    }).status_code==404
