@@ -1,6 +1,6 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState,type TouchEvent} from 'react';
 import {AnimatePresence,motion,useReducedMotion} from 'framer-motion';
-import {ChevronLeft,ChevronRight,Pause,Play} from 'lucide-react';
+import {CheckCircle2,ChevronLeft,ChevronRight,HeartHandshake,Pause,Play} from 'lucide-react';
 
 const slides=[
   {
@@ -70,7 +70,7 @@ export function HeroSlideshow(){
    return()=>window.clearInterval(interval);
  },[suspended,current]);
  function change(index:number){setCurrent((index+slides.length)%slides.length)}
- function touchEnd(event:React.TouchEvent<HTMLDivElement>){
+ function touchEnd(event:TouchEvent<HTMLDivElement>){
    if(touchStartX.current===null)return;
    const distance=event.changedTouches[0].clientX-touchStartX.current;
    touchStartX.current=null;
@@ -100,8 +100,8 @@ export function HeroSlideshow(){
     <span>{slide.eyebrow}</span><strong>{slide.title}</strong>
    </div>
    <div className="v5-photo-glass">
-     <div><span className="v5-glass-icon"><span aria-hidden="true">♡</span></span><span>Trao gửi yêu thương<small>Niềm tin được xây từ minh bạch</small></span></div>
-     <span className="v5-glass-mark" aria-hidden="true">✦</span>
+     <div><span className="v5-glass-icon"><HeartHandshake size={18}/></span><span>Trao gửi yêu thương<small>Niềm tin được xây từ minh bạch</small></span></div>
+     <span className="v5-glass-mark" aria-hidden="true"><CheckCircle2 size={20}/></span>
    </div>
    <div className="v5-slideshow-toolbar" role="group" aria-label="Điều khiển ảnh">
       <button type="button" className="v5-slide-arrow" onClick={()=>change(current-1)} aria-label="Ảnh trước"><ChevronLeft size={15}/></button>
