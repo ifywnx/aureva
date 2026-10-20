@@ -147,6 +147,7 @@ class ExpenseInput(Input):
 class Decision(Input):
     status: Literal['approved','rejected']
     reason: str = Field(min_length=5,max_length=1000)
+    warnings_acknowledged: bool = False
 
 @app.post('/api/auth/register', status_code=201)
 def register(payload: Register):
@@ -294,10 +295,14 @@ def decide(id:str,payload:Decision,user=Depends(current_user)):
             available=db.execute("SELECT COALESCE((SELECT SUM(amount) FROM donations WHERE campaign_id=? AND status='confirmed'),0)-COALESCE((SELECT SUM(amount) FROM expenses WHERE campaign_id=? AND status='approved'),0)",(row['campaign_id'],row['campaign_id'])).fetchone()[0]
             if row['amount']>available: raise HTTPException(409,'Khoản chi vượt số dư đã đối soát của chiến dịch.')
         from backend.evidence import decision_evidence
-        decision_evidence(db,row,user,payload)
+        alerts = decision_evidence(db,row,user,payload)
         db.execute('UPDATE expenses SET status=?,reason=?,reviewer_id=? WHERE id=?',(payload.status,payload.reason,user['id'],id))
-        audit(db,user,'expense.'+payload.status,id,{'amount':row['amount'],'reason':payload.reason,'blockchain':'not_configured'})
-    return {'status':payload.status,'blockchain':'not_configured'}
+        audit(db,user,'expense.'+payload.status,id,{
+            'amount':row['amount'],'reason':payload.reason,
+            'warnings_count':len(alerts),'warnings_acknowledged':payload.status=='approved' and payload.warnings_acknowledged,
+            'blockchain':'pending'
+        })
+    return {'status':payload.status,'blockchain':'pending','warnings_count':len(alerts)}
 
 @app.get('/api/health')
 def health():
