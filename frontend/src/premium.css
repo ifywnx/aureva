@@ -432,3 +432,14 @@ h1,h2,h3{letter-spacing:-.04em}
 .detail-ledger .record-line>div{flex-basis:100%}
 .detail-disclaimer{padding:13px;font-size:10px}
 }
+
+/* QA: keep the entire illustrated proofboard inside the mobile hero. */
+@media(max-width:650px){
+ .identity-shell .hero.hero-v3{overflow:hidden;padding-bottom:21px}
+ .proof-visual{height:auto;min-height:380px;padding:23px 2px 20px;margin:13px 0 0}
+ .proof-visual-sheet{width:100%;max-width:344px;margin:auto;padding:16px 13px 13px}
+ .proof-visual-index{top:0}
+}
+@media(max-width:370px){
+ .proof-visual{min-height:405px}
+}
