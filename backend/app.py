@@ -267,7 +267,10 @@ def workspace(user=Depends(current_user)):
             demo_approver = user['id'] == 'aureva_demo_approver_v1'
             where = ' WHERE c.owner_id=?' if (user['role']=='manager' or demo_approver) else ''
             args = ('aureva_demo_manager_v1',) if demo_approver else (user['id'],) if user['role']=='manager' else ()
-            donations=db.execute('SELECT d.*, c.title AS campaign_title FROM donations d JOIN campaigns c ON c.id=d.campaign_id'+where+' ORDER BY d.created DESC',args).fetchall()
+            # Approvers inspect expense evidence only. Donor bank references and
+            # identities must never enter the approver workspace API response.
+            donations=(db.execute('SELECT d.*, c.title AS campaign_title FROM donations d JOIN campaigns c ON c.id=d.campaign_id'+where+' ORDER BY d.created DESC',args).fetchall()
+                if user['role']=='manager' else [])
             expenses=db.execute('SELECT e.*, c.title AS campaign_title FROM expenses e JOIN campaigns c ON c.id=e.campaign_id'+where+' ORDER BY e.created DESC',args).fetchall()
     from backend.evidence import doc_public
     with connect() as db:
