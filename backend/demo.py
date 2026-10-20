@@ -1,0 +1,82 @@
+"""Preview-only AUREVA role switch for classroom demonstrations.
+
+This feature is intentionally unavailable in production, development and
+unconfigured previews. The three identities are dedicated demo accounts,
+never real user impersonation. Vercel Deployment Protection must remain on.
+"""
+import os
+import secrets
+import time
+from typing import Literal
+
+from fastapi import HTTPException, Request, Response
+from pydantic import BaseModel, ConfigDict
+
+from backend.app import connect, digest, password_hash, public_user
+
+DEMO_ACCOUNTS = {
+    'donor': ('aureva_demo_donor_v1', 'DEMO · Người đóng góp', 'preview-donor@aureva.invalid'),
+    'manager': ('aureva_demo_manager_v1', 'DEMO · Người phụ trách', 'preview-manager@aureva.invalid'),
+    'approver': ('aureva_demo_approver_v1', 'DEMO · Người phê duyệt', 'preview-approver@aureva.invalid'),
+}
+
+
+def enabled():
+    """Fail closed if the site is not a DB-isolated protected Vercel Preview."""
+    return all((
+        os.getenv('AUREVA_DEMO_SWITCH') == '1',
+        os.getenv('VERCEL_ENV') == 'preview',
+        os.getenv('AUREVA_DB_SCHEMA') == 'aureva_preview',
+        bool(os.getenv('DATABASE_URL')),
+        not os.getenv('AUREVA_DB'),
+    ))
+
+
+class DemoSelection(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    role: Literal['donor', 'manager', 'approver']
+
+
+def register(app):
+    @app.get('/api/demo/status')
+    def status():
+        return {'enabled': enabled()}
+
+    @app.post('/api/demo/switch')
+    def switch(payload: DemoSelection, request: Request, response: Response):
+        if not enabled():
+            raise HTTPException(404, 'Chế độ demo không khả dụng.')
+        if not (request.headers.get('host', '').lower().endswith('.vercel.app')
+                and request.url.scheme == 'https'):
+            # HTTPS provided by Vercel; proxy headers can vary, check Host and
+            # authenticated browser Origin instead of trusting forwarded scheme.
+            origin = request.headers.get('origin', '')
+            host = request.headers.get('host', '').lower()
+            if not (host.endswith('.vercel.app') and origin == 'https://' + host):
+                raise HTTPException(403, 'Chế độ demo chỉ dành cho Vercel Preview.')
+
+        account_id, name, email = DEMO_ACCOUNTS[payload.role]
+        old_token = request.cookies.get('aureva_session', '')
+        token = secrets.token_urlsafe(32)
+        with connect(write=True) as db:
+            # Never turn a real account into a demo identity, even if ids collide.
+            user = db.execute('SELECT * FROM users WHERE id=?', (account_id,)).fetchone()
+            if user:
+                if user['role'] != payload.role or user['email'] != email:
+                    raise HTTPException(409, 'Trùng định danh demo. Cần quản trị viên kiểm tra.')
+            else:
+                random_unrecoverable_password = password_hash(secrets.token_urlsafe(48))
+                db.execute(
+                    'INSERT INTO users(id,name,email,password,role) VALUES(?,?,?,?,?)',
+                    (account_id, name, email, random_unrecoverable_password, payload.role),
+                )
+                user = db.execute('SELECT * FROM users WHERE id=?', (account_id,)).fetchone()
+            if old_token:
+                db.execute('DELETE FROM sessions WHERE token=?', (digest(old_token),))
+            db.execute('INSERT INTO sessions(token,user_id,expires) VALUES(?,?,?)',
+                       (digest(token), account_id, int(time.time()) + 28800))
+        response.set_cookie(
+            'aureva_session', token, httponly=True, samesite='strict',
+            secure=True, max_age=28800,
+        )
+        return {**public_user(user), 'demo': True}
