@@ -1,7 +1,6 @@
 /* AUREVA V5 BLUE IMPACT | production-intended preview visual system
    Identity: resilient Vietnam / measurable transparency / engineering trust
    The `v5-` prefix intentionally isolates flagship visuals from older themes. */
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
 :root{
  --v5-blue:#155EEF;--v5-blue-dark:#0B2B54;--v5-blue-deep:#081E45;
  --v5-sky:#47A5FC;--v5-cyan:#65DFFF;--v5-white:#fff;
