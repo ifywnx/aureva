@@ -128,7 +128,7 @@ def run():
                     page.screenshot(path="work/aureva-workspace.png",full_page=True)
                     # Confirm the standalone MetaMask deploy screen has no auto-sign.
                     wallet=browser.new_context(viewport={"width":1060,"height":860})
-                    wallet.add_init_script("""() => {
+                    wallet.add_init_script("""(() => {
                         const listeners={};
                         window.ethereum={
                             request:async ({method,params})=>{
@@ -142,7 +142,7 @@ def run():
                             },
                             on:(name,cb)=>{listeners[name]=cb}
                         };
-                    }""")
+                    })()""")
                     wallet_page=wallet.new_page()
                     wallet_page.goto(BASE+'/deploy-sepolia.html',wait_until='networkidle')
                     expect(wallet_page.get_by_role('heading',name='Triển khai Blockchain. Không cần chia sẻ khóa ví.')).to_be_visible()
