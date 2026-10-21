@@ -100,3 +100,15 @@ Luồng chạy kiểm thử và trạng thái tích hợp được mô tả tron
 Các tính năng lõi đã có unit/browser tests. Các bước **chưa thể tuyên bố hoàn thành** khi chưa có bằng chứng E2E: API OpenAI với hóa đơn thật, Sepolia transaction/receipt thật và bản deploy có PostgreSQL persistent kiểm tra sau restart.
 
 Đồ án có tham khảo ý tưởng ReliefChain/AapdaSetu, nhưng thiết kế UX và nghiệp vụ AUREVA được phát triển riêng.
+
+## Thuyết trình đủ 3 vai trò – AI thật + Sepolia thật
+
+Mở **https://aureva-sigma.vercel.app/?demo=1**, nhập mã truy cập của nhóm,
+rồi chuyển nhanh **Donor / Manager / Approver** ngay trên website chính.
+Các thao tác nghiệp vụ chạy qua FastAPI vào vùng database `aureva_presentation`
+độc lập. Tài khoản DEMO không có quyền trên dữ liệu quyên góp Production.
+AI chứng từ sử dụng nhà cung cấp thực; Blockchain dùng MetaMask và Sepolia thật
+khi key/RPC/ví hợp lệ. Không tự nhận tích hợp thành công nếu chưa có phản hồi/receipt.
+Đường dẫn `/?sandbox=1` là bản mô phỏng offline cũ, không dùng làm minh chứng AI/Blockchain.
+
+**Hướng dẫn cài mã thuyết trình, quy trình và tắt chế độ:** [PRESENTATION_MODE.md](PRESENTATION_MODE.md).
