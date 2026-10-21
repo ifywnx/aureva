@@ -95,7 +95,7 @@ def call_openai(message: str, history: list[dict], snapshot: dict):
     if not key:
         raise HTTPException(503, 'Trợ lý AI chưa được cấu hình khóa OpenAI.')
     model = os.getenv('OPENAI_MODEL', MODEL_DEFAULT).strip() or MODEL_DEFAULT
-    base_url = os.getenv('AI_BASE_URL', 'https://api.openai.com/v1').strip().rstrip('/')
+    base_url = (os.getenv('AI_BASE_URL') or 'https://api.openai.com/v1').strip().rstrip('/')
     if base_url not in ('https://api.openai.com/v1', 'https://api.miraiapi.com/v1'):
         raise HTTPException(503, 'AI_BASE_URL không được hỗ trợ.')
     mirai = base_url == 'https://api.miraiapi.com/v1'
@@ -159,8 +159,12 @@ def call_openai(message: str, history: list[dict], snapshot: dict):
             timeout=35,
         )
         if result.status_code == 429:
+            if mirai:
+                raise HTTPException(503,
+                    'MiraiAPI đang giới hạn lượt gọi hoặc đã hết hạn mức. Vui lòng thử lại sau.')
             raise HTTPException(503,
-                'Nhà cung cấp AI đang giới hạn lượt gọi hoặc hết hạn mức. Vui lòng thử lại sau.')
+                'OpenAI đang giới hạn lượt gọi hoặc tài khoản API đã hết hạn mức. '
+                'Hãy kiểm tra Usage/Billing trên OpenAI Platform; chờ một lúc rồi thử lại.')
         if result.status_code in (401, 403):
             raise HTTPException(503,
                 'Nhà cung cấp AI từ chối khóa hoặc model (HTTP '
