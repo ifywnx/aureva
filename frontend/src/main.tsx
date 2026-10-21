@@ -179,6 +179,11 @@ const liveSiteRequested = query.get('site') === '1';
 function VisitorEntry(){
  const [openToEveryone,setOpenToEveryone]=useState<boolean|null>(null);
  useEffect(()=>{
+  // The offline sandbox must NEVER make API requests, even to discover DEMO.
+  if(offlineSandboxRequested||liveSiteRequested){
+   setOpenToEveryone(false);
+   return;
+  }
   fetch('/api/demo/config',{credentials:'same-origin',cache:'no-store'})
    .then(async response=>response.ok?response.json():null)
    .then(info=>setOpenToEveryone(info?.public_demo===true))
