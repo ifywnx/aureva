@@ -90,7 +90,7 @@ def run():
                     demo_tab.locator(".pd-role").filter(has_text="Người đóng góp").click()
                     demo_tab.locator('.pd-inline input[name="amount"]').fill("500000")
                     demo_tab.get_by_role("button", name="Ghi nhận DEMO").click()
-                    expect(demo_tab.get_by_text("Chờ đối soát", exact=True)).to_be_visible()
+                    expect(demo_tab.locator(".pd-status.pending")).to_be_visible()
                     demo_tab.locator(".pd-role").filter(has_text="Người quản lý").click()
                     demo_tab.get_by_role("button", name="Xác nhận DEMO").click()
                     demo_tab.locator('input[name="purpose"]').fill("Mua gạo và mì gói")
