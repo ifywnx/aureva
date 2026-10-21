@@ -151,7 +151,7 @@ def call_openai(message: str, history: list[dict], snapshot: dict):
                 'Hãy kiểm tra Usage/Billing trên OpenAI Platform; chờ một lúc rồi thử lại.')
         if result.status_code in (401, 403):
             raise HTTPException(503,
-                'Khóa API OpenAI không được chấp nhận. Quản trị viên cần cập nhật khóa trên Vercel Preview.')
+                'OpenAI từ chối khóa API. Hãy kiểm tra khóa và nhà cung cấp: website hiện kết nối trực tiếp api.openai.com.')
         if result.status_code != 200:
             raise HTTPException(502, 'OpenAI tạm thời không phản hồi (HTTP ' + str(result.status_code) + '). Vui lòng thử lại sau.')
         data = result.json()
