@@ -84,7 +84,7 @@ def run():
                     demo_tab = manager.new_page()
                     demo_tab.on("request", lambda req: demo_requests.append(req.url)
                                 if "/api/" in req.url else None)
-                    demo_tab.goto(BASE + "/?demo=1", wait_until="networkidle")
+                    demo_tab.goto(BASE + "/?sandbox=1", wait_until="networkidle")
                     expect(demo_tab.get_by_role("heading", name="Thử đủ 3 vai trò. Hiểu trọn một quy trình.")).to_be_visible()
                     assert demo_tab.locator(".pd-role").count() == 3
                     demo_tab.locator(".pd-role").filter(has_text="Người đóng góp").click()
@@ -114,6 +114,13 @@ def run():
                     demo_tab.reload(wait_until="networkidle")
                     expect(demo_tab.locator(".pd-status.approved")).to_be_visible()
                     demo_tab.close()
+                    # Public demo=1 now prompts for a server-issued classroom access
+                    # cookie; it must NOT grant roles merely from a query parameter.
+                    gate_tab=manager.new_page()
+                    gate_tab.goto(BASE + "/?demo=1", wait_until="networkidle")
+                    expect(gate_tab.get_by_label("Mã truy cập thuyết trình")).to_be_visible()
+                    assert gate_tab.locator(".aureva-demo-bar").count()==0
+                    gate_tab.close()
                     page.goto(BASE+'/?utm_source=external&ref=preserved#intro',wait_until="networkidle")
                     assert 'utm_source=' not in page.url, "Referral query should be removed from address bar"
                     assert '?ref=preserved#intro' in page.url, "Unrelated query and hash must remain untouched"

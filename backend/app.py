@@ -9,6 +9,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from psycopg import IntegrityError as PostgresIntegrityError
 from pydantic import BaseModel, Field, ConfigDict, field_validator
+from backend.presentation import push_schema, pop_schema
+from backend import presentation
 
 ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = Path(os.getenv('AUREVA_DB', str(ROOT / 'data/aureva.db')))
@@ -73,28 +75,43 @@ app = FastAPI(title='AUREVA API', version='0.1.0', lifespan=lifespan)
 
 @app.middleware('http')
 async def guard(request: Request, call_next):
-    if request.url.path.startswith('/api/') and request.method not in ('GET','HEAD','OPTIONS'):
-        if request.headers.get('X-Aureva-Request') != '1':
-            return JSONResponse({'detail':'Yêu cầu không hợp lệ.'}, status_code=403)
-        origin = request.headers.get('origin')
-        allowed = os.getenv('AUREVA_ORIGIN', 'http://127.0.0.1:8001')
-        if origin and origin not in (allowed, 'http://localhost:8001'):
-            # Preview builds have unique URLs. Allow same-host HTTPS origins only on
-            # Vercel preview and only when the isolated preview DB schema is active.
-            host=request.headers.get('host','').lower()
-            same_host_preview=(
-                os.getenv('AUREVA_DB_SCHEMA')=='aureva_preview'
-                and host.endswith('.vercel.app')
-                and origin=='https://'+host
-            )
-            if not same_host_preview:
-                return JSONResponse({'detail':'Nguồn yêu cầu không được phép.'}, status_code=403)
-    response = await call_next(request)
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['Referrer-Policy'] = 'same-origin'
-    if request.url.path.startswith('/api/'):
-        response.headers['Cache-Control'] = 'no-store'
-    return response
+    presentation_token = push_schema(request)
+    try:
+        if request.url.path.startswith('/api/') and request.method not in ('GET','HEAD','OPTIONS'):
+            if request.headers.get('X-Aureva-Request') != '1':
+                return JSONResponse({'detail':'Yêu cầu không hợp lệ.'}, status_code=403)
+            origin = request.headers.get('origin')
+            allowed = os.getenv('AUREVA_ORIGIN', 'http://127.0.0.1:8001')
+            if origin and origin not in (allowed, 'http://localhost:8001'):
+                # Preview builds have unique URLs. Allow same-host HTTPS origins only on
+                # Vercel preview and only when the isolated preview DB schema is active.
+                host=request.headers.get('host','').lower()
+                same_host_preview=(
+                    os.getenv('AUREVA_DB_SCHEMA')=='aureva_preview'
+                    and host.endswith('.vercel.app')
+                    and origin=='https://'+host
+                )
+                # The PIN-gated classroom page can also be opened from an
+                # immutable Production deployment URL on the same Vercel host.
+                same_host_presentation = (
+                    request.headers.get('host','').lower().endswith('.vercel.app')
+                    and origin == 'https://' + request.headers.get('host','').lower()
+                    and (request.url.path == '/api/demo/unlock'
+                         or request.url.path == '/api/demo/lock'
+                         or presentation.is_presentation_request())
+                    and os.getenv('VERCEL_ENV') == 'production'
+                )
+                if not (same_host_preview or same_host_presentation):
+                    return JSONResponse({'detail':'Nguồn yêu cầu không được phép.'}, status_code=403)
+        response = await call_next(request)
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['Referrer-Policy'] = 'same-origin'
+        if request.url.path.startswith('/api/'):
+            response.headers['Cache-Control'] = 'no-store'
+        return response
+
+    finally:
+        pop_schema(presentation_token)
 
 def current_user(request: Request):
     token = request.cookies.get('aureva_session', '')
