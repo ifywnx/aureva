@@ -78,7 +78,7 @@ def run():
                 try:
                     manager=browser.new_context(viewport={"width":1440,"height":900},accept_downloads=True)
                     page=manager.new_page()
-                    page.goto(BASE+'/?utm_source=chatgpt.com&ref=preserved#intro',wait_until="networkidle")
+                    page.goto(BASE+'/?utm_source=external&ref=preserved#intro',wait_until="networkidle")
                     assert 'utm_source=' not in page.url, "Referral query should be removed from address bar"
                     assert '?ref=preserved#intro' in page.url, "Unrelated query and hash must remain untouched"
                     Path("work").mkdir(exist_ok=True)
@@ -198,7 +198,7 @@ def run():
                         };
                     })()""")
                     wallet_page=wallet.new_page()
-                    wallet_page.goto(BASE+'/deploy-sepolia.html?utm_source=chatgpt.com&keep=1#contract',wait_until='networkidle')
+                    wallet_page.goto(BASE+'/deploy-sepolia.html?utm_source=external&keep=1#contract',wait_until='networkidle')
                     assert 'utm_source=' not in wallet_page.url
                     assert '?keep=1#contract' in wallet_page.url
                     expect(wallet_page.get_by_role('heading',name='Triển khai Blockchain. Không cần chia sẻ khóa ví.')).to_be_visible()

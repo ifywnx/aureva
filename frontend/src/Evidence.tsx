@@ -111,10 +111,35 @@ function DocumentPreview({expenseId,filename,mime}:{expenseId:string;filename:st
   {error&&<p role="alert" className="alert error">{error}</p>}
  </div>;
 }
+function AiNote({text,animate}:{text:string;animate:boolean}){
+ const [skip,setSkip]=useState(false);
+ const [visible,setVisible]=useState(animate?0:text.length);
+ useEffect(()=>{
+  const preference=window.matchMedia('(prefers-reduced-motion: reduce)');
+  let frame=0;
+  const finish=()=>{cancelAnimationFrame(frame);setVisible(text.length)};
+  if(skip||!animate||preference.matches){finish();return}
+  setVisible(0);
+  const started=performance.now();
+  const duration=Math.min(5000,Math.max(600,Array.from(text).length*22));
+  const characters=Array.from(text);
+  const tick=(now:number)=>{
+   const progress=Math.min(1,(now-started)/duration);
+   setVisible(characters.slice(0,Math.ceil(progress*characters.length)).join('').length);
+   if(progress<1)frame=requestAnimationFrame(tick);
+  };
+  frame=requestAnimationFrame(tick);
+  preference.addEventListener('change',finish);
+  return ()=>{cancelAnimationFrame(frame);preference.removeEventListener('change',finish)};
+ },[text,animate,skip]);
+ return <div className="ai-note-reveal"><p className="muted" aria-label={'Ghi chú AI: '+text}><span aria-hidden="true">Ghi chú AI: {text.slice(0,visible)}{visible<text.length&&<span className="ai-text-caret">▍</span>}</span></p>{visible<text.length&&<button type="button" className="btn light" onClick={()=>setSkip(true)}>Hiện toàn bộ</button>}</div>;
+}
 export function EvidencePanel({id,status,document,manager,onRefresh,attestation,amount,vendor}:{id:string;status:string;document?:DocumentInfo|null;manager:boolean;onRefresh:()=>Promise<void>;attestation?:Attestation|null;amount?:number;vendor?:string}){
  const[busy,setBusy]=useState(false),[error,setError]=useState('');
  async function execute(fn:()=>Promise<unknown>){setBusy(true);setError('');try{await fn();await onRefresh()}catch(e){setError((e as Error).message);await onRefresh().catch(()=>{})}finally{setBusy(false)}}
  async function upload(e:FormEvent<HTMLFormElement>){e.preventDefault();await execute(()=>request('/expenses/'+id+'/document',new FormData(e.currentTarget)))}
+ const [revealNote,setRevealNote]=useState(false);
+ async function analyze(){setRevealNote(true);await execute(()=>request('/expenses/'+id+'/analyze'))}
  const analyzed=document?.ai_status==='completed';
  const total=document?.invoice?.total;
  const discrepancy=analyzed&&typeof amount==='number'&&typeof total==='number'&&document.invoice?.currency==='VND'&&amount!==total;
@@ -129,12 +154,13 @@ export function EvidencePanel({id,status,document,manager,onRefresh,attestation,
     </div>
     {discrepancy&&<div className="ai-delta"><AlertTriangle size={17}/> Chênh lệch {money(Math.abs((amount??0)-(total??0)))} — cần đối chiếu thủ công</div>}
     <div className="ai-fields"><span>Nhà cung cấp <b>{document.invoice.vendor??'Không đọc được'}</b></span><span>Số hóa đơn <b>{document.invoice.invoice_number??'Không đọc được'}</b></span><span>Đơn vị khai báo <b>{vendor??'Chưa khai báo'}</b></span></div>
-    {document.invoice.notes&&<p className="muted">Ghi chú AI: {document.invoice.notes}</p>}
+    {document.invoice.notes&&<AiNote key={document.id} text={document.invoice.notes} animate={revealNote}/>}
    </div>}
    {document.warnings.length>0?<div className="warnings warnings-v3"><div><ShieldAlert size={18}/><b>{document.warnings.length} điểm cần người có thẩm quyền xác minh</b></div><ul>{document.warnings.map((w,i)=><li key={i}>{w}</li>)}</ul></div>:analyzed&&<div className="ai-safe"><CheckCircle2 size={17}/> Chưa phát hiện chênh lệch theo quy tắc hiện tại. Điều này không chứng minh hóa đơn là thật.</div>}
+   {busy&&!analyzed&&<p className="ai-waiting" role="status"><ScanText size={16}/> Đang chờ AI phân tích chứng từ<span aria-hidden="true" className="ai-waiting-dots">…</span></p>}
    {document.ai_error&&<p role="alert" className="alert error">{document.ai_error}</p>}
    {status==='pending'&&!analyzed&&!manager&&<p className="muted"><LockKeyhole size={15}/> Đang đợi người phụ trách hoàn tất phân tích AI; người phê duyệt chỉ xem kết quả và quyết định.</p>}
-   {status==='pending'&&!analyzed&&manager&&<div className="ai-action"><p className="muted"><LockKeyhole size={15}/> Nội dung chứng từ sẽ được gửi tới OpenAI API khi bạn bấm phân tích. Hãy che thông tin cá nhân không cần thiết.</p><button disabled={busy||document.ai_status==='processing'} className="btn primary" onClick={()=>execute(()=>request('/expenses/'+id+'/analyze'))}><ScanText size={16}/>{busy?'Đang phân tích…':document.ai_status==='processing'?'Đang xử lý':'Phân tích bằng OpenAI'}</button></div>}
+   {status==='pending'&&!analyzed&&manager&&<div className="ai-action"><p className="muted"><LockKeyhole size={15}/> Nội dung chứng từ sẽ được gửi tới nhà cung cấp AI đã cấu hình khi bạn bấm phân tích. Hãy che thông tin cá nhân không cần thiết.</p><button disabled={busy||document.ai_status==='processing'} className="btn primary" onClick={analyze}><ScanText size={16}/>{busy?'Đang phân tích…':document.ai_status==='processing'?'Đang xử lý':'Phân tích bằng AI'}</button></div>}
   </>}
   {error&&<p role="alert" className="alert error">{error}</p>}
   {attestation&&<ChainActions id={id} state={attestation} onRefresh={onRefresh} editable/>}

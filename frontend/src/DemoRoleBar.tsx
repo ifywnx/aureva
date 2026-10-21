@@ -15,7 +15,7 @@ const steps=[
  {role:'manager' as const,title:'Tạo chiến dịch thử',detail:'Chọn Quản lý → Tạo chiến dịch; tên sẽ tự có nhãn [DEMO].'},
  {role:'donor' as const,title:'Ghi nhận đóng góp mô phỏng',detail:'Chọn Đóng góp → mở chiến dịch DEMO → nhập số tiền. Không có chuyển khoản hay ETH.'},
  {role:'manager' as const,title:'Đối soát và đề xuất chi',detail:'Trở lại Quản lý → xác nhận khoản giả định → đề xuất khoản chi → tải chứng từ mẫu.'},
- {role:'manager' as const,title:'Phân tích chứng từ bằng AI',detail:'Bấm phân tích. OpenAI cần API key thật; lỗi API không được thay bằng kết quả giả.'},
+ {role:'manager' as const,title:'Phân tích chứng từ bằng AI',detail:'Bấm phân tích. Nhà cung cấp AI cần API key hợp lệ; lỗi API không được thay bằng kết quả giả.'},
  {role:'approver' as const,title:'Phê duyệt hoặc từ chối',detail:'Chọn Phê duyệt → đọc cảnh báo AI → ghi lý do và quyết định.'},
  {role:'approver' as const,title:'Kiểm chứng Blockchain và PDF',detail:'Dùng ví chủ hợp đồng MetaMask ký Sepolia (nếu đã cấu hình), xem TX/Etherscan và hash PDF.'},
 ];
