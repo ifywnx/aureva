@@ -3,7 +3,7 @@ import base64, hashlib, io, json, os, time, unicodedata
 from pathlib import Path
 from typing import Literal
 import httpx
-from fastapi import Depends, HTTPException, UploadFile, File, Response
+from fastapi import Depends, HTTPException, UploadFile, File, Response, Request
 from pydantic import BaseModel, Field, ConfigDict
 
 class Invoice(BaseModel):
@@ -238,7 +238,7 @@ def register(app):
         return Response(bytes(doc['content']),media_type=doc['mime'],headers={'Content-Disposition':f'attachment; filename="chung-tu-{id}.{ext}"','Cache-Control':'no-store'})
 
     @app.post('/api/expenses/{id}/analyze')
-    def analyze(id:str,user=Depends(current_user)):
+    def analyze(id:str, request:Request, user=Depends(current_user)):
         # Explicit action is consent to send this invoice to the configured AI provider.
         with connect(write=True) as db:
             expense=access(db,id,user)
@@ -247,6 +247,11 @@ def register(app):
             if not doc: raise HTTPException(404,'Cần tải chứng từ trước.')
             if doc['ai_status']=='completed': return doc_public(db,expense)
             if doc['ai_status']=='processing' and int(time.time())-(doc['attempt_started'] or 0)<90:raise HTTPException(409,'Chứng từ đang được phân tích.')
+            # Anonymous classroom access MUST NOT create unbounded API bills.
+            # The counter lives in the isolated presentation schema and is
+            # serialized with the write transaction.
+            from backend.presentation import reserve_public_ai_quota
+            reserve_public_ai_quota(db, 'invoice', daily_limit=24)
             db.execute("UPDATE documents SET ai_status='processing',attempt_started=?,ai_error=NULL WHERE expense_id=?",(int(time.time()),id))
         try: result,model=extract_invoice(bytes(doc['content']),doc['mime'])
         except HTTPException as e:
