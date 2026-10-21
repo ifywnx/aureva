@@ -1,4 +1,4 @@
-import {ArrowUpRight, CircleHelp, HeartHandshake, Layers3, LogOut, ShieldCheck, Wallet} from 'lucide-react';
+import {ArrowUpRight, CircleHelp, HeartHandshake, Layers3, LogOut, ShieldCheck, Sparkles, Wallet} from 'lucide-react';
 import {AurevaMark} from './AurevaStory';
 
 type UserHeader={name:string;role:'donor'|'manager'|'approver'};
@@ -20,6 +20,7 @@ export function AurevaHeader({page,user,onNavigate,onLogin,onLogout}:{
         {user&&<button className={page==='workspace'?'active':''} aria-current={page==='workspace'?'page':undefined} onClick={()=>onNavigate('workspace')}><Wallet size={16}/> Không gian làm việc</button>}
       </nav>
       <div className="site-account">
+        <a href="/?demo=1" className="aureva-public-demo-entry" aria-label="Dùng thử DEMO 3 tài khoản"><Sparkles size={15}/> Dùng thử DEMO</a>
         {user?<><div className="site-user"><span className="user-avatar">{user.name.trim().charAt(0).toUpperCase()}</span><span><strong>{user.name}</strong><small>{roleName[user.role]}</small></span></div><button className="icon-btn" title="Đăng xuất" aria-label="Đăng xuất" onClick={onLogout}><LogOut size={18}/></button></>:
           <button className="btn account-login" onClick={onLogin}>Đăng nhập <ArrowUpRight size={16}/></button>}
       </div>
