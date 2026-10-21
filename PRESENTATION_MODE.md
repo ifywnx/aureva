@@ -1,6 +1,7 @@
 # AUREVA – Chế độ thuyết trình dùng API, AI và Sepolia thật
 
-Mở **https://aureva-sigma.vercel.app/?demo=1** rồi nhập mã thuyết trình được trưởng nhóm cấp.
+Trong thời gian bật DEMO công khai, **mọi người chỉ cần mở https://aureva-sigma.vercel.app/** để vào bản AUREVA thật với ba vai trò.
+Có thể mở trực tiếp **https://aureva-sigma.vercel.app/?demo=1**. Không cần mã khi bật `AUREVA_PUBLIC_DEMO=1`.
 Vào xong, website tự tải giao diện AUREVA gốc, có thanh chuyển 3 tài khoản DEMO:
 **Donor → Manager → Approver**. Đây là **tài khoản backend thử nghiệm thật**
 trong schema PostgreSQL `aureva_presentation`, **không phải tài khoản Production**.
@@ -25,7 +26,7 @@ khoản đóng góp và đối soát là dữ liệu DEMO do nhóm nhập, khôn
 ## Bảo mật và cô lập
 
 - Website chính `/` không có đặc quyền 3 vai trò cho khách truy cập.
-- Phải nhập PIN. Server cấp cookie HttpOnly, Secure, SameSite=Strict có chữ ký
+- Khách cùng nguồn được tự mở DEMO bằng `POST /api/demo/enter`. Server cấp cookie HttpOnly, Secure, SameSite=Strict có chữ ký
   HMAC, hết hạn sau **6 giờ**.
 - Với cookie hợp lệ, *toàn bộ request* được route sang schema
   `aureva_presentation` bằng `ContextVar` + transaction-local
@@ -34,7 +35,10 @@ khoản đóng góp và đối soát là dữ liệu DEMO do nhóm nhập, khôn
   cho backend. Schema chính `aureva` và schema Preview `aureva_preview`
   không bị dùng làm nơi lưu dữ liệu lớp học.
 - **Thoát chế độ thuyết trình** xóa cookie quyền DEMO và cookie đăng nhập.
-- Rate limit mã truy cập sai theo IP: tối đa 10 lần trong 15 phút.
+- PIN vẫn là cách truy cập dự phòng khi chế độ công khai tắt.
+- Rate limit chuyển vai trò theo IP: 60 lần / 15 phút. Trần AI dùng chung trên DEMO: 24 lượt phân tích hóa đơn và 120 lượt chatbot / ngày UTC.
+- Các tài khoản và hồ sơ trong chế độ thuyết trình **dùng chung** giữa những người xem: hãy sử dụng dữ liệu giả, không nhập thông tin nhạy cảm.
+- Endpoint `/api/attestations/{id}/anchor` (ký bằng ví server) bị chặn trong DEMO công khai. Chỉ ký Sepolia qua MetaMask của ví chủ hợp đồng.
 - Thanh chuyển nhanh tạo session chỉ cho 3 người dùng DEMO; không biến tài khoản
   thường thành Manager/Approver trên Production.
 - Không ghi khóa API/DB/ví vào code hoặc `README`.
@@ -44,7 +48,8 @@ khoản đóng góp và đối soát là dữ liệu DEMO do nhóm nhập, khôn
 | Biến | Mục đích |
 |---|---|
 | `DATABASE_URL` | Vẫn là chuỗi kết nối Production, được server route sang schema `aureva_presentation` khi xác thực DEMO |
-| `AUREVA_PRESENTATION_CODE` | PIN dài ít nhất 12 ký tự, giá trị Sensitive, chia riêng cho nhóm |
+| `AUREVA_PUBLIC_DEMO` | `1` khi thuyết trình công khai, `0` hoặc xóa khi tắt; **phải redeploy** để cấu hình hiệu lực |
+| `AUREVA_PRESENTATION_CODE` | PIN dự phòng, Sensitive; không cần chia mã cho khán giả |
 | `AUREVA_PRESENTATION_SIGNING_KEY` | Secret ít nhất 32 ký tự để ký cookie, Sensitive, **không chia cho nhóm** |
 | `OPENAI_API_KEY`, `AI_BASE_URL`, `OPENAI_MODEL` | Nhà cung cấp AI thật, có quota/model đúng |
 | `SEPOLIA_RPC_URL`, `AUREVA_CONTRACT_ADDRESS` | RPC và hợp đồng Sepolia thật |
@@ -52,9 +57,9 @@ khoản đóng góp và đối soát là dữ liệu DEMO do nhóm nhập, khôn
 Không tạo các biến PIN/signing key cho Preview. Preview vẫn có DEMO bảo vệ
 bằng Deployment Protection như trước, dùng schema riêng `aureva_preview`.
 
-**Tắt ngay chế độ thuyết trình khi hết buổi:** xóa hai biến
-`AUREVA_PRESENTATION_CODE`, `AUREVA_PRESENTATION_SIGNING_KEY`
-khỏi Production rồi redeploy. Chỉ ẩn nút bằng CSS là không đủ.
+**Tắt khi triển khai thật:** xóa hoặc đổi `AUREVA_PUBLIC_DEMO=0` trên Production rồi **redeploy**. Các cookie DEMO được cấp theo chế độ công khai sẽ tự mất hiệu lực do backend kiểm tra cờ này trên từng request. Nếu cần tắt cả chế độ PIN, xóa thêm `AUREVA_PRESENTATION_CODE` và `AUREVA_PRESENTATION_SIGNING_KEY` rồi redeploy. Chỉ ẩn nút bằng CSS là không đủ.
+
+**Lưu ý:** Khách truy cập tên miền gốc được đưa thẳng vào DEMO khi bật public flag. Người quản trị muốn xem luồng Production bình thường có thể thoát chế độ DEMO hoặc dùng `/?site=1` (nhớ thoát chế độ để hủy cookie DEMO).
 
 ## Thiết lập database
 
