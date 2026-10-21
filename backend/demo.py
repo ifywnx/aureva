@@ -55,8 +55,11 @@ class PresentationCode(BaseModel):
 def register(app):
     @app.get('/api/demo/status')
     def status():
-        mode = 'presentation' if presentation.is_presentation_request() else 'preview' if enabled() else 'off'
-        return {'enabled': enabled(), 'mode': mode, 'presentation_available': presentation.presentation_enabled()}
+        # Preserve the stable disabled response for existing clients and tests.
+        if not enabled():
+            return {'enabled': False}
+        mode = 'presentation' if presentation.is_presentation_request() else 'preview'
+        return {'enabled': True, 'mode': mode}
 
     @app.post('/api/demo/unlock')
     def unlock(payload: PresentationCode, request: Request, response: Response):
