@@ -95,6 +95,10 @@ def call_openai(message: str, history: list[dict], snapshot: dict):
     if not key:
         raise HTTPException(503, 'Trợ lý AI chưa được cấu hình khóa OpenAI.')
     model = os.getenv('OPENAI_MODEL', MODEL_DEFAULT).strip() or MODEL_DEFAULT
+    base_url = (os.getenv('AI_BASE_URL') or 'https://api.openai.com/v1').strip().rstrip('/')
+    if base_url not in ('https://api.openai.com/v1', 'https://api.miraiapi.com/v1'):
+        raise HTTPException(503, 'AI_BASE_URL không được hỗ trợ.')
+    mirai = base_url == 'https://api.miraiapi.com/v1'
     instructions = (
         'Bạn là AUREVA AI Assistant, trợ lý của nền tảng minh bạch cứu trợ Việt Nam. '
         'Trả lời hoàn toàn bằng tiếng Việt, ngắn gọn, ấm áp, dễ hiểu. '
@@ -119,54 +123,75 @@ def call_openai(message: str, history: list[dict], snapshot: dict):
         'Không được mô tả chức năng chưa kiểm chứng thực tế là đã chạy thành công. '
         'Không xuất markdown dạng bảng hay link URL tự tạo; có thể dùng đoạn ngắn.'
     )
-    body = {
-        'model': model,
-        'store': False,
-        'max_output_tokens': 700,
-        'instructions': instructions,
-        'input': [{
-            'role': 'user',
-            'content': [{
-                'type': 'input_text',
-                'text': json.dumps({
-                    'PUBLIC_SNAPSHOT': snapshot,
-                    'conversation_from_untrusted_browser': history[-MAX_HISTORY:],
-                    'current_question': message
-                }, ensure_ascii=False, separators=(',', ':'))
-            }]
-        }]
-    }
+    question_data = json.dumps({
+        'PUBLIC_SNAPSHOT': snapshot,
+        'conversation_from_untrusted_browser': history[-MAX_HISTORY:],
+        'current_question': message
+    }, ensure_ascii=False, separators=(',', ':'))
+    if mirai:
+        # MiraiAPI documents OpenAI-compatible Chat Completions, not this
+        # application's OpenAI Responses request shape.
+        body = {
+            'model': model,
+            'max_tokens': 700,
+            'messages': [
+                {'role': 'system', 'content': instructions},
+                {'role': 'user', 'content': question_data}
+            ]
+        }
+        endpoint = base_url + '/chat/completions'
+    else:
+        body = {
+            'model': model,
+            'store': False,
+            'max_output_tokens': 700,
+            'instructions': instructions,
+            'input': [{'role': 'user', 'content': [
+                {'type': 'input_text', 'text': question_data}
+            ]}]
+        }
+        endpoint = base_url + '/responses'
     try:
         result = httpx.post(
-            'https://api.openai.com/v1/responses',
+            endpoint,
             headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'},
             json=body,
             timeout=35,
         )
         if result.status_code == 429:
-            # A provider-side 429 is not a failed user login nor the local chat limit.
-            # Repeated immediate retries can increase costs and trigger more throttling.
+            if mirai:
+                raise HTTPException(503,
+                    'MiraiAPI đang giới hạn lượt gọi hoặc đã hết hạn mức. Vui lòng thử lại sau.')
             raise HTTPException(503,
                 'OpenAI đang giới hạn lượt gọi hoặc tài khoản API đã hết hạn mức. '
                 'Hãy kiểm tra Usage/Billing trên OpenAI Platform; chờ một lúc rồi thử lại.')
         if result.status_code in (401, 403):
             raise HTTPException(503,
-                'Khóa API OpenAI không được chấp nhận. Quản trị viên cần cập nhật khóa trên Vercel Preview.')
+                'Nhà cung cấp AI từ chối khóa hoặc model (HTTP '
+                + str(result.status_code) + '). Kiểm tra khóa, thời hạn và quyền sử dụng model.')
         if result.status_code != 200:
-            raise HTTPException(502, 'OpenAI tạm thời không phản hồi (HTTP ' + str(result.status_code) + '). Vui lòng thử lại sau.')
+            raise HTTPException(502, 'Dịch vụ AI không phản hồi (HTTP ' + str(result.status_code)
+                                + '). Vui lòng kiểm tra model và thử lại.')
         data = result.json()
-        if data.get('status') != 'completed':
-            raise HTTPException(502, 'Câu trả lời AI chưa hoàn tất. Hãy thử lại.')
-        fragments = [
-            part.get('text', '')
-            for item in data.get('output', [])
-            if item.get('type') == 'message'
-            for part in item.get('content', [])
-            if part.get('type') == 'output_text'
-        ]
-        answer = '\n'.join(x for x in fragments if isinstance(x, str) and x.strip()).strip()
+        if mirai:
+            choices = data.get('choices') or []
+            answer = (choices[0].get('message') or {}).get('content') if choices else None
+            if not isinstance(answer, str):
+                raise HTTPException(502, 'Nhà cung cấp AI không trả về câu trả lời hợp lệ.')
+            answer = answer.strip()
+        else:
+            if data.get('status') != 'completed':
+                raise HTTPException(502, 'Câu trả lời AI chưa hoàn tất. Hãy thử lại.')
+            fragments = [
+                part.get('text', '')
+                for item in data.get('output', [])
+                if item.get('type') == 'message'
+                for part in item.get('content', [])
+                if part.get('type') == 'output_text'
+            ]
+            answer = '\n'.join(x for x in fragments if isinstance(x, str) and x.strip()).strip()
         if not answer:
-            raise HTTPException(502, 'OpenAI không trả về nội dung trả lời hợp lệ.')
+            raise HTTPException(502, 'AI không trả về nội dung trả lời hợp lệ.')
         return answer[:3000], model
     except HTTPException:
         raise
