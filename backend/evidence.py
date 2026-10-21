@@ -53,7 +53,7 @@ def extract_invoice(raw,mime):
     """
     key=os.getenv('OPENAI_API_KEY')
     model=os.getenv('OPENAI_MODEL','gpt-5-mini').strip()
-    base_url=os.getenv('AI_BASE_URL','https://api.openai.com/v1').strip().rstrip('/')
+    base_url=(os.getenv('AI_BASE_URL') or 'https://api.openai.com/v1').strip().rstrip('/')
     if base_url not in ('https://api.openai.com/v1','https://api.miraiapi.com/v1'):
         raise HTTPException(503,'AI_BASE_URL không được hỗ trợ.')
     mirai=base_url=='https://api.miraiapi.com/v1'
