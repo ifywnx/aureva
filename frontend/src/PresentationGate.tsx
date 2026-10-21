@@ -3,9 +3,10 @@ import {ArrowLeft, ArrowRight, KeyRound, LockKeyhole, ShieldCheck, Sparkles} fro
 import './PresentationGate.css';
 
 /**
- * The passcode unlocks the existing real FastAPI/React flow against a separate
+ * Public visitors automatically enter the real FastAPI/React flow against a separate
  * PostgreSQL schema. It does not log in as a real manager or simulate AI.
  * The server issues a short-lived, signed, HttpOnly presentation cookie.
+ * A protected PIN fallback remains available when the public toggle is off.
  */
 export function PresentationGate({children}:{children:ReactNode}){
  const [ready,setReady]=useState(false);
@@ -16,11 +17,35 @@ export function PresentationGate({children}:{children:ReactNode}){
 
  useEffect(()=>{
    let alive=true;
-   fetch('/api/demo/status',{credentials:'same-origin',cache:'no-store'})
-    .then(async response=>response.ok?response.json():null)
-    .then(data=>{if(alive)setUnlocked(data?.enabled===true)})
-    .catch(()=>{if(alive)setError('Chưa kiểm tra được trạng thái DEMO. Hãy tải lại trang.')})
-    .finally(()=>{if(alive)setReady(true)});
+   async function initialize(){
+    try{
+     const statusResponse=await fetch('/api/demo/status',{credentials:'same-origin',cache:'no-store'});
+     const status=statusResponse.ok?await statusResponse.json():null;
+     if(status?.enabled===true){
+      if(alive)setUnlocked(true);
+      return;
+     }
+     const configResponse=await fetch('/api/demo/config',{credentials:'same-origin',cache:'no-store'});
+     const config=configResponse.ok?await configResponse.json():null;
+     if(config?.public_demo===true){
+      const entry=await fetch('/api/demo/enter',{
+       method:'POST',credentials:'same-origin',
+       headers:{'Content-Type':'application/json','X-Aureva-Request':'1'},
+       body:JSON.stringify({})
+      });
+      if(!entry.ok){
+       const detail=await entry.json().catch(()=>null);
+       throw new Error(typeof detail?.detail==='string'?detail.detail:'Không thể mở DEMO công khai.');
+      }
+      const result=await entry.json();
+      if(result?.mode!=='presentation')throw new Error('Không thể xác thực phiên DEMO.');
+      if(alive)setUnlocked(true);
+     }
+    }catch(e){
+     if(alive)setError(e instanceof Error?e.message:'Chưa kết nối được chế độ DEMO.');
+    }finally{if(alive)setReady(true)}
+   }
+   void initialize();
    return()=>{alive=false};
  },[]);
 
@@ -44,7 +69,7 @@ export function PresentationGate({children}:{children:ReactNode}){
   finally{setBusy(false)}
  }
 
- if(!ready)return <div className="pg-loading" role="status">Đang kiểm tra quyền truy cập chế độ thuyết trình…</div>;
+ if(!ready)return <div className="pg-loading" role="status">Đang mở AUREVA DEMO và chuẩn bị 3 tài khoản…</div>;
  if(unlocked)return <>{children}</>;
  return <main className="pg-page">
   <div className="pg-shell">

@@ -124,6 +124,9 @@ def register(app):
     @app.post('/api/attestations/{entity_id}/anchor')
     def anchor(entity_id:str,user=Depends(current_user)):
         require(user,'manager','approver')
+        from backend.presentation import is_presentation_request
+        if is_presentation_request():
+            raise HTTPException(403, 'DEMO chỉ cho phép tự ký Sepolia bằng MetaMask; không dùng khóa ví trên máy chủ.')
         try:
             w3,contract,account=client()
             with connect(write=True) as db:

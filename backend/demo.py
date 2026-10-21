@@ -1,4 +1,4 @@
-"""Role switch inside isolated Preview or PIN-gated Production presentation mode.
+"""Role switch inside isolated Preview or signed-ticket Production presentation mode.
 
 The Production gate routes every request to a separate PostgreSQL schema.
 The three identities are synthetic, never real account impersonation.
@@ -53,6 +53,26 @@ class PresentationCode(BaseModel):
 
 
 def register(app):
+    @app.get('/api/demo/config')
+    def public_config():
+        # No cookie is issued by a GET. Switching roles still requires a
+        # same-origin POST and a short-lived signed presentation ticket.
+        return {'public_demo': presentation.public_demo_enabled()}
+
+    @app.post('/api/demo/enter')
+    def public_enter(request: Request, response: Response):
+        if not presentation.public_demo_enabled():
+            raise HTTPException(404, 'Chế độ DEMO công khai chưa được bật.')
+        if not presentation.same_origin(request):
+            raise HTTPException(403, 'Chỉ được vào DEMO từ chính website AUREVA.')
+        response.set_cookie(
+            presentation.COOKIE, presentation.issue_ticket(public=True),
+            httponly=True, samesite='strict', secure=True,
+            max_age=presentation.LIFETIME,
+        )
+        response.delete_cookie('aureva_session', path='/')
+        return {'enabled':True,'mode':'presentation'}
+
     @app.get('/api/demo/status')
     def status():
         # Preserve the stable disabled response for existing clients and tests.

@@ -96,8 +96,7 @@ async def guard(request: Request, call_next):
                 same_host_presentation = (
                     request.headers.get('host','').lower().endswith('.vercel.app')
                     and origin == 'https://' + request.headers.get('host','').lower()
-                    and (request.url.path == '/api/demo/unlock'
-                         or request.url.path == '/api/demo/lock'
+                    and (request.url.path in ('/api/demo/unlock', '/api/demo/lock', '/api/demo/enter')
                          or presentation.is_presentation_request())
                     and os.getenv('VERCEL_ENV') == 'production'
                 )

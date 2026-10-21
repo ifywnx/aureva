@@ -80,3 +80,77 @@ def test_preview_keeps_original_isolated_role_switch(monkeypatch):
     monkeypatch.delenv('AUREVA_DB',raising=False)
     assert demo.enabled()
     assert not presentation.presentation_enabled()
+
+
+def test_public_demo_ticket_is_scoped_and_can_be_revoked(production,monkeypatch):
+    monkeypatch.setenv('AUREVA_PUBLIC_DEMO','1')
+    assert presentation.public_demo_enabled()
+    public_ticket=presentation.issue_ticket(public=True)
+    assert presentation.valid_ticket(public_ticket)
+    token=presentation.push_schema(make_request(public_ticket))
+    try:
+        assert presentation.selected_schema()=='aureva_presentation'
+        assert demo.enabled()
+    finally:
+        presentation.pop_schema(token)
+    monkeypatch.delenv('AUREVA_PUBLIC_DEMO')
+    assert not presentation.public_demo_enabled()
+    assert not presentation.valid_ticket(public_ticket)
+    token=presentation.push_schema(make_request(public_ticket))
+    try:
+        assert presentation.selected_schema() is None
+        assert not demo.enabled()
+    finally:
+        presentation.pop_schema(token)
+
+
+def test_public_demo_entry_requires_same_origin_without_database(production,monkeypatch):
+    from fastapi.testclient import TestClient
+    monkeypatch.setenv('AUREVA_PUBLIC_DEMO','1')
+    base='https://aureva-sigma.vercel.app'
+    web=TestClient(app_module.app,base_url=base)
+    try:
+        result=web.get('/api/demo/config')
+        assert result.status_code==200
+        assert result.json()['public_demo'] is True
+        # An Origin-less or cross-site request must not mint a demo session.
+        missing=web.post('/api/demo/enter',headers={'X-Aureva-Request':'1'},json={})
+        assert missing.status_code==403
+        evil=web.post('/api/demo/enter',headers={
+            'Origin':'https://evil.example','X-Aureva-Request':'1'},json={})
+        assert evil.status_code==403
+        good=web.post('/api/demo/enter',headers={
+            'Origin':base,'X-Aureva-Request':'1'},json={})
+        assert good.status_code==200,good.text
+        assert good.json()['mode']=='presentation'
+        assert 'httponly' in good.headers.get('set-cookie','').lower()
+        assert 'secure' in good.headers.get('set-cookie','').lower()
+        assert web.get('/api/demo/status').json()['enabled'] is True
+    finally:
+        web.close()
+    monkeypatch.delenv('AUREVA_PUBLIC_DEMO')
+
+
+def test_global_public_ai_quota_fails_closed(production,monkeypatch):
+    from fastapi import HTTPException
+    monkeypatch.setenv('AUREVA_PUBLIC_DEMO','1')
+    token=presentation.push_schema(make_request(presentation.issue_ticket(public=True)))
+    try:
+        class FakeDB:
+            def __init__(self):self.row=None
+            def execute(self,sql,args):
+                if sql.startswith('SELECT'):
+                    class C:
+                        def __init__(self,row):self.row=row
+                        def fetchone(self):return self.row
+                    return C(self.row)
+                self.row={'count':args[1]}
+                return None
+        db=FakeDB()
+        presentation.reserve_public_ai_quota(db,'invoice',daily_limit=2)
+        presentation.reserve_public_ai_quota(db,'invoice',daily_limit=2)
+        with pytest.raises(HTTPException) as error:
+            presentation.reserve_public_ai_quota(db,'invoice',daily_limit=2)
+        assert error.value.status_code==429
+    finally:
+        presentation.pop_schema(token)
