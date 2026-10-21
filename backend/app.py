@@ -90,7 +90,16 @@ async def guard(request: Request, call_next):
                     and host.endswith('.vercel.app')
                     and origin=='https://'+host
                 )
-                if not same_host_preview:
+                # The PIN-gated classroom page can also be opened from an
+                # immutable Production deployment URL on the same Vercel host.
+                same_host_presentation = (
+                    request.headers.get('host','').lower().endswith('.vercel.app')
+                    and origin == 'https://' + request.headers.get('host','').lower()
+                    and (request.url.path in ('/api/demo/unlock','/api/demo/lock')
+                         or request.cookies.get('aureva_presentation'))
+                    and os.getenv('VERCEL_ENV') == 'production'
+                )
+                if not (same_host_preview or same_host_presentation):
                     return JSONResponse({'detail':'Nguồn yêu cầu không được phép.'}, status_code=403)
         response = await call_next(request)
         response.headers['X-Content-Type-Options'] = 'nosniff'
