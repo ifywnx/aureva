@@ -78,6 +78,42 @@ def run():
                 try:
                     manager=browser.new_context(viewport={"width":1440,"height":900},accept_downloads=True)
                     page=manager.new_page()
+                    # The public three-role sandbox must work without API access
+                    # or writing a single record to the production database.
+                    demo_requests = []
+                    demo_tab = manager.new_page()
+                    demo_tab.on("request", lambda req: demo_requests.append(req.url)
+                                if "/api/" in req.url else None)
+                    demo_tab.goto(BASE + "/?demo=1", wait_until="networkidle")
+                    expect(demo_tab.get_by_role("heading", name="Thử đủ 3 vai trò. Hiểu trọn một quy trình.")).to_be_visible()
+                    assert demo_tab.locator(".pd-role").count() == 3
+                    demo_tab.locator(".pd-role").filter(has_text="Người đóng góp").click()
+                    demo_tab.locator('.pd-inline input[name="amount"]').fill("500000")
+                    demo_tab.get_by_role("button", name="Ghi nhận DEMO").click()
+                    expect(demo_tab.get_by_text("Chờ đối soát", exact=True)).to_be_visible()
+                    demo_tab.locator(".pd-role").filter(has_text="Người quản lý").click()
+                    demo_tab.get_by_role("button", name="Xác nhận DEMO").click()
+                    demo_tab.locator('input[name="purpose"]').fill("Mua gạo và mì gói")
+                    demo_tab.locator('input[name="vendor"]').fill("Đơn vị mẫu")
+                    demo_tab.locator('input[name="amount"]').last.fill("200000")
+                    demo_tab.get_by_role("button", name="Gửi chờ phê duyệt").click()
+                    demo_tab.get_by_role("button", name="Thêm chứng từ và đối chiếu").click()
+                    demo_tab.locator('input[name="receipt"]').set_input_files({
+                        "name": "hoa-don-demo.png", "mimeType": "image/png",
+                        "buffer": b"local-test-only-image",
+                    })
+                    demo_tab.locator('input[name="invoiceTotal"]').fill("200000")
+                    demo_tab.get_by_role("button", name="Đối chiếu mô phỏng").click()
+                    demo_tab.locator(".pd-role").filter(has_text="Người phê duyệt").click()
+                    demo_tab.locator(".pd-decision textarea").fill("Đã đối chiếu chứng từ mẫu; đồng ý phê duyệt.")
+                    demo_tab.get_by_role("button", name="Phê duyệt DEMO").click()
+                    expect(demo_tab.locator(".pd-status.approved")).to_be_visible(timeout=10000)
+                    digest = demo_tab.locator(".pd-hash code").inner_text()
+                    assert len(digest) == 64, "Local-only SHA-256 should have 64 hex characters"
+                    assert not demo_requests, f"Public sandbox unexpectedly contacted API: {demo_requests}"
+                    demo_tab.reload(wait_until="networkidle")
+                    expect(demo_tab.locator(".pd-status.approved")).to_be_visible()
+                    demo_tab.close()
                     page.goto(BASE+'/?utm_source=external&ref=preserved#intro',wait_until="networkidle")
                     assert 'utm_source=' not in page.url, "Referral query should be removed from address bar"
                     assert '?ref=preserved#intro' in page.url, "Unrelated query and hash must remain untouched"
