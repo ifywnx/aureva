@@ -51,7 +51,7 @@ function App(){
  async function exitPresentation(){
   await run(async()=>{
    await api('/demo/lock',{});
-   window.location.assign('/');
+   window.location.assign('/?site=1');
   });
  }
  async function switchDemo(role:DemoRole){await run(async()=>{
@@ -93,7 +93,7 @@ function App(){
  <AurevaHeader page={page} user={user} onNavigate={navigate} onLogin={()=>open('login')} onLogout={()=>run(async()=>{await api('/auth/logout',{});setUser(null);setWorkspace({donations:[],expenses:[]});navigate('overview');setNotice('Đã đăng xuất.');})}/>
  {demoEnabled&&demoMode==='presentation'&&<div className="aureva-presentation-banner">
    <strong>CHẾ ĐỘ THUYẾT TRÌNH</strong>
-   <span>3 tài khoản thử · dữ liệu database riêng · AI thật · Sepolia testnet</span>
+   <span>3 tài khoản thử · dữ liệu DEMO dùng chung · AI thật có giới hạn · Sepolia testnet (MetaMask)</span>
    <button type="button" disabled={busy} onClick={()=>void exitPresentation()}>Thoát chế độ thuyết trình</button>
   </div>}
   <DemoRoleBar enabled={demoEnabled} user={user} busy={busy} onSwitch={role=>void switchDemo(role)}/>
@@ -175,7 +175,19 @@ function Records({items,action,publicView=false}:{items:RecordItem[];action?:(r:
 const query = new URLSearchParams(window.location.search);
 const presentationRequested = query.get('demo') === '1';
 const offlineSandboxRequested = query.get('sandbox') === '1';
-createRoot(document.getElementById('root')!).render(
- presentationRequested ? <PresentationGate><App/></PresentationGate> :
- offlineSandboxRequested ? <PublicDemo/> : <App/>
-);
+const liveSiteRequested = query.get('site') === '1';
+function VisitorEntry(){
+ const [openToEveryone,setOpenToEveryone]=useState<boolean|null>(null);
+ useEffect(()=>{
+  fetch('/api/demo/config',{credentials:'same-origin',cache:'no-store'})
+   .then(async response=>response.ok?response.json():null)
+   .then(info=>setOpenToEveryone(info?.public_demo===true))
+   .catch(()=>setOpenToEveryone(false));
+ },[]);
+ if(offlineSandboxRequested)return <PublicDemo/>;
+ if(liveSiteRequested)return <App/>;
+ if(presentationRequested || openToEveryone===true)return <PresentationGate><App/></PresentationGate>;
+ if(openToEveryone===null)return <div className="pg-loading" role="status">Đang mở AUREVA…</div>;
+ return <App/>;
+}
+createRoot(document.getElementById('root')!).render(<VisitorEntry/>);
