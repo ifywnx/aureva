@@ -11,7 +11,7 @@
 - Frontend: React 18, TypeScript, Vite, Framer Motion, Lucide.
 - Backend: FastAPI, Pydantic, Python 3.12.
 - Persistence: PostgreSQL (Supabase ở bản hosted) hoặc SQLite trên volume bền vững khi phát triển.
-- AI: **OpenAI Responses API**, đọc JPG/PNG/PDF và trả JSON có cấu trúc; không dùng kết quả lập sẵn khi thiếu key.
+- AI: backend hỗ trợ **OpenAI Responses API** hoặc **MiraiAPI Chat Completions** tùy `AI_BASE_URL`/model. AI đọc chứng từ và chatbot dùng khóa cấu hình riêng phía server; AI lỗi thì báo lỗi, không giả kết quả. MiraiAPI đọc ảnh hoặc PDF có thể trích được văn bản.
 - Blockchain: smart contract `AurevaRegistry.sol` trên **Ethereum Sepolia** (chain ID 11155111), ghi SHA-256 của bản chốt; có thể ký bằng MetaMask.
 - PDF: ReportLab; báo cáo chốt cố định và kiểm tra SHA-256 trong trình duyệt.
 
@@ -32,7 +32,7 @@ Các vai trò `donor`, `manager`, `approver` được kiểm tra tại server. �
 ```bash
 git clone https://github.com/ifywnx/aureva.git
 cd aureva
-git switch feat/premium-motion-ui-20261020
+# Mặc định đã ở main (bản dùng báo cáo); không cần chuyển nhánh cũ.
 # Cài Python 3.12, Node 22+ và uv nếu máy chưa có.
 uv venv --python 3.12 .venv
 uv pip install --python .venv/bin/python -r requirements.lock.txt
@@ -59,8 +59,9 @@ Sử dụng `.env.example` làm mẫu, nhưng chỉ đặt secrets trong `.env` 
 
 | Tên biến | Mục đích |
 |---|---|
-| `OPENAI_API_KEY` | Đọc hóa đơn bằng OpenAI và chatbot |
-| `OPENAI_MODEL` | Model thị giác/Structured Outputs, mặc định `gpt-5-mini` |
+| `OPENAI_API_KEY` | Khóa nhà cung cấp AI hiện tại, chỉ lưu phía server |
+| `OPENAI_MODEL` | Tên model do nhà cung cấp hỗ trợ; mặc định `gpt-5-mini` nếu dùng OpenAI trực tiếp |
+| `AI_BASE_URL` | Để trống: OpenAI; MiraiAPI: `https://api.miraiapi.com/v1` (chỉ backend) |
 | `DATABASE_URL` | PostgreSQL bền vững, bắt buộc trên Vercel |
 | `AUREVA_DB_SCHEMA` | `aureva` hoặc `aureva_preview` |
 | `AUREVA_ORIGIN` | HTTPS origin khớp chính xác môi trường chạy |
@@ -88,7 +89,7 @@ Workflow GitHub Actions: `.github/workflows/aureva-quality.yml` tự chạy test
 ## Triển khai và demo 28/10
 
 - **Preview an toàn:** cấu hình schema PostgreSQL `aureva_preview`, database role riêng, cookie secure, Vercel Deployment Protection, và (nếu cần) nút đổi vai trò demo chỉ trên Preview.
-- **OpenAI thật:** dùng chứng từ thử đã che thông tin cá nhân, ví dụ số khai báo khác số trên hóa đơn; kiểm tra API response và cảnh báo không phải kết quả hardcode.
+- **AI thật:** dùng chứng từ thử đã che thông tin cá nhân, kiểm tra API/provider/model/quota bằng một yêu cầu thực tế và xác nhận cảnh báo không hardcode.
 - **Blockchain thật:** deploy `AurevaRegistry.sol` bằng MetaMask testnet, cấu hình RPC/address, ghi một mã băm rồi đối chiếu TX ở [Sepolia Etherscan](https://sepolia.etherscan.io/).
 - **Data bền vững:** tạo chiến dịch preview, tải lại, đăng nhập lại và kiểm tra sau redeploy.
 - **Xuất báo cáo:** tạo PDF trên API, tải xuống, kiểm tra hash của PDF, ghi dấu báo cáo qua ví và xác minh trực tiếp.
@@ -100,3 +101,10 @@ Luồng chạy kiểm thử và trạng thái tích hợp được mô tả tron
 Các tính năng lõi đã có unit/browser tests. Các bước **chưa thể tuyên bố hoàn thành** khi chưa có bằng chứng E2E: API OpenAI với hóa đơn thật, Sepolia transaction/receipt thật và bản deploy có PostgreSQL persistent kiểm tra sau restart.
 
 Đồ án có tham khảo ý tưởng ReliefChain/AapdaSetu, nhưng thiết kế UX và nghiệp vụ AUREVA được phát triển riêng.
+
+## Chuẩn bị hỏi đáp cá nhân
+
+Đọc [Hướng dẫn hỏi đáp & giải thích code cho nhóm](docs/HUONG_DAN_HOI_DAP_CODE_NHOM.md):
+đường đi của mỗi chức năng, 5 module gợi ý phân công, 7 câu hỏi phản biện,
+3 bài sửa code nhỏ trong 3 phút và mẫu kê khai công cụ AI.
+Mỗi thành viên cần tự kiểm thử phần đã nhận; tài liệu không thay thế đóng góp thật.
