@@ -99,4 +99,4 @@ Luồng chạy kiểm thử và trạng thái tích hợp được mô tả tron
 
 Các tính năng lõi đã có unit/browser tests. Các bước **chưa thể tuyên bố hoàn thành** khi chưa có bằng chứng E2E: API OpenAI với hóa đơn thật, Sepolia transaction/receipt thật và bản deploy có PostgreSQL persistent kiểm tra sau restart.
 
-PR đang phát triển: [#1](https://github.com/ifywnx/aureva/pull/1). Không merge hoặc promote lên production chỉ vì build thành công. Đồ án có tham khảo ý tưởng ReliefChain/AapdaSetu, nhưng thiết kế UX và nghiệp vụ AUREVA được phát triển riêng.
+Đồ án có tham khảo ý tưởng ReliefChain/AapdaSetu, nhưng thiết kế UX và nghiệp vụ AUREVA được phát triển riêng.

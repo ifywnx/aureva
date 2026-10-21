@@ -1,6 +1,6 @@
 # AUREVA – AI đọc chứng từ qua OpenAI Responses API
 
-> Đặc tả chính thức cập nhật 20/10/2026: sử dụng OpenAI API thay cho Google Gemini. Codex là agent hỗ trợ lập trình; tính năng đọc ảnh hóa đơn/PDF cần một model API hỗ trợ đầu vào hình ảnh và file.
+> Đặc tả chính thức cập nhật 20/10/2026: sử dụng OpenAI API thay cho Google Gemini. Tính năng đọc ảnh hóa đơn/PDF cần một model API hỗ trợ đầu vào hình ảnh và file.
 
 ## 1. Cấu hình
 
@@ -14,7 +14,7 @@ OPENAI_MODEL=gpt-5-mini
 - `OPENAI_API_KEY`: API key từ nền tảng OpenAI, có project billing/quota phù hợp.
 - `OPENAI_MODEL`: tên model có khả năng đọc ảnh/PDF và Structured Outputs. Mặc định `gpt-5-mini`. Kiểm tra hạn mức và quyền truy cập model của project.
 - Không dùng `GEMINI_API_KEY`/`GEMINI_MODEL` nữa. Chúng không kích hoạt chức năng AI trong AUREVA.
-- Nếu người dùng chỉ có **tài khoản ChatGPT/Codex**, điều này **không thay thế** API key OpenAI dành cho backend.
+- Backend cần API key còn hiệu lực và đúng nhà cung cấp đã cấu hình.
 
 ## 2. Luồng thực hiện
 

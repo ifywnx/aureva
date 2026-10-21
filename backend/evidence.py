@@ -48,8 +48,8 @@ def validate_document(raw):
 def extract_invoice(raw,mime):
     """Read a real Vietnamese receipt via the OpenAI Responses API (image or PDF).
 
-    Codex is the coding agent; invoice vision needs an API model supporting images
-    and Structured Outputs. OPENAI_MODEL can override the model after verification.
+    Invoice extraction requires image input and structured output support.
+    OPENAI_MODEL selects the configured provider model.
     """
     key=os.getenv('OPENAI_API_KEY')
     model=os.getenv('OPENAI_MODEL','gpt-5-mini').strip()
