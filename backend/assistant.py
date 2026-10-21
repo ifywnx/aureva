@@ -211,10 +211,11 @@ def register(app):
             snapshot = public_snapshot()
         except Exception:
             raise HTTPException(503, 'Chưa kết nối được dữ liệu AUREVA. Trợ lý không thể đưa ra số liệu lúc này.')
-        from backend.presentation import reserve_public_ai_quota
-        from backend.app import connect
-        with connect(write=True) as db:
-            reserve_public_ai_quota(db, 'assistant', daily_limit=120)
+        from backend import presentation
+        if presentation.is_presentation_request() and presentation.public_demo_enabled():
+            from backend.app import connect
+            with connect(write=True) as db:
+                presentation.reserve_public_ai_quota(db, 'assistant', daily_limit=120)
         answer, model = call_openai(payload.message, [t.model_dump() for t in payload.history], snapshot)
         return {
             'reply': answer,
