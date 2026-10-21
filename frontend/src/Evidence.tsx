@@ -36,7 +36,7 @@ export function ChainActions({id,state,onRefresh,editable}:{id:string;state:Atte
    const provider=walletProvider();
    if(!provider)throw Error('Chưa tìm thấy MetaMask. Mở trang bằng trình duyệt có MetaMask.');
    const prepared=await request('/attestations/'+id+'/prepare-wallet') as PrepareWallet;
-   if(prepared.chain_id!==11155111||!/^0x[0-9a-fA-F]{40}$/.test(prepared.contract)||!/^0x[0-9a-fA-F]{64}$/.test(prepared.digest))
+   if(prepared.chain_id!==11155111||!/^0x[0-9a-fA-F]{40}$/.test(prepared.contract)||!/^[0-9a-fA-F]{64}$/.test(prepared.digest))
     throw Error('Dữ liệu giao dịch hợp đồng không hợp lệ.');
    const accounts=await provider.request({method:'eth_requestAccounts'});
    const account=Array.isArray(accounts)?String(accounts[0]??''):'';
