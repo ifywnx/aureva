@@ -108,7 +108,8 @@ def test_public_demo_entry_requires_same_origin_without_database(production,monk
     from fastapi.testclient import TestClient
     monkeypatch.setenv('AUREVA_PUBLIC_DEMO','1')
     base='https://aureva-sigma.vercel.app'
-    with TestClient(app_module.app,base_url=base) as web:
+    web=TestClient(app_module.app,base_url=base)
+    try:
         result=web.get('/api/demo/config')
         assert result.status_code==200
         assert result.json()['public_demo'] is True
@@ -125,6 +126,8 @@ def test_public_demo_entry_requires_same_origin_without_database(production,monk
         assert 'httponly' in good.headers.get('set-cookie','').lower()
         assert 'secure' in good.headers.get('set-cookie','').lower()
         assert web.get('/api/demo/status').json()['enabled'] is True
+    finally:
+        web.close()
     monkeypatch.delenv('AUREVA_PUBLIC_DEMO')
 
 
