@@ -30,9 +30,15 @@ def presentation_enabled() -> bool:
         os.getenv('AUREVA_DB_SCHEMA', 'aureva') == 'aureva',
         bool(os.getenv('DATABASE_URL')),
         not os.getenv('AUREVA_DB'),
-        len(os.getenv('AUREVA_PRESENTATION_CODE', '')) >= 12,
+        (len(os.getenv('AUREVA_PRESENTATION_CODE', '')) >= 12
+         or os.getenv('AUREVA_PUBLIC_DEMO') == '1'),
         len(os.getenv('AUREVA_PRESENTATION_SIGNING_KEY', '')) >= 32,
     ))
+
+
+def public_demo_enabled() -> bool:
+    """One kill switch for anonymous classroom admission on Production."""
+    return presentation_enabled() and os.getenv('AUREVA_PUBLIC_DEMO') == '1'
 
 
 def same_origin(request: Request) -> bool:
@@ -53,8 +59,11 @@ def _signature(message: str) -> str:
     return hmac.new(key, message.encode('ascii'), hashlib.sha256).hexdigest()
 
 
-def issue_ticket() -> str:
-    payload = f'{int(time.time()) + LIFETIME}.{secrets.token_hex(16)}'
+def issue_ticket(public: bool = False) -> str:
+    # Separate publicly issued tickets so disabling AUREVA_PUBLIC_DEMO
+    # immediately invalidates them without waiting for cookie expiry.
+    prefix = 'public.' if public else ''
+    payload = prefix + f'{int(time.time()) + LIFETIME}.{secrets.token_hex(16)}'
     return payload + '.' + _signature(payload)
 
 
@@ -62,9 +71,15 @@ def valid_ticket(token: str) -> bool:
     if not presentation_enabled() or not token or len(token) > 200:
         return False
     parts = token.split('.')
-    if len(parts) != 3:
+    public_ticket = len(parts) == 4 and parts[0] == 'public'
+    if public_ticket:
+        if not public_demo_enabled():
+            return False
+        expiry, nonce, claimed = parts[1:]
+    elif len(parts) == 3:
+        expiry, nonce, claimed = parts
+    else:
         return False
-    expiry, nonce, claimed = parts
     if not expiry.isdigit() or len(nonce) != 32 or len(claimed) != 64:
         return False
     try:
@@ -73,7 +88,8 @@ def valid_ticket(token: str) -> bool:
         return False
     if age <= 0 or age > LIFETIME:
         return False
-    return hmac.compare_digest(_signature(expiry + '.' + nonce), claimed)
+    signed_payload = ('public.' if public_ticket else '') + expiry + '.' + nonce
+    return hmac.compare_digest(_signature(signed_payload), claimed)
 
 
 def gated_request(request: Request) -> bool:
