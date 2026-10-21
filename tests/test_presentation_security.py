@@ -2,6 +2,7 @@
 import pytest
 from starlette.requests import Request
 
+from backend import app as app_module  # Load FastAPI first; it registers backend.demo.
 from backend import presentation
 from backend import demo
 
