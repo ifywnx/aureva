@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from psycopg import IntegrityError as PostgresIntegrityError
 from pydantic import BaseModel, Field, ConfigDict, field_validator
+from backend.finance import available_to_approve, confirmed_totals
 
 ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = Path(os.getenv('AUREVA_DB', str(ROOT / 'data/aureva.db')))
@@ -203,7 +204,15 @@ LEFT JOIN campaign_covers cover ON cover.campaign_id=c.id'''
 def dashboard():
     with connect() as db:
         campaigns=[dict(r) for r in db.execute(CAMPAIGN_SQL+' ORDER BY c.created DESC')]
-    return {'campaigns':campaigns,'raised':sum(c['raised'] for c in campaigns),'spent':sum(c['spent'] for c in campaigns),'contribution_count':sum(c['contribution_count'] for c in campaigns),'integrations':{'ai':'configured' if os.getenv('OPENAI_API_KEY') else 'not_configured','blockchain':'configured' if all(os.getenv(k) for k in ('SEPOLIA_RPC_URL','AUREVA_CONTRACT_ADDRESS')) else 'not_configured'}}
+    # The public numbers reflect confirmed ledger entries only, not cash flow.
+    totals = confirmed_totals(campaigns)
+    integrations = {
+        'ai': 'configured' if os.getenv('OPENAI_API_KEY') else 'not_configured',
+        'blockchain': 'configured' if all(
+            os.getenv(key) for key in ('SEPOLIA_RPC_URL', 'AUREVA_CONTRACT_ADDRESS')
+        ) else 'not_configured',
+    }
+    return {'campaigns': campaigns, **totals, 'integrations': integrations}
 
 @app.post('/api/campaigns',status_code=201)
 def create_campaign(payload: CampaignInput,user=Depends(current_user)):
@@ -337,7 +346,7 @@ def decide(id:str,payload:Decision,user=Depends(current_user)):
         if row['creator_id']==user['id']: raise HTTPException(403,'Không được tự duyệt khoản chi.')
         if row['status']!='pending': raise HTTPException(409,'Khoản chi đã có quyết định.')
         if payload.status=='approved':
-            available=db.execute("SELECT COALESCE((SELECT SUM(amount) FROM donations WHERE campaign_id=? AND status='confirmed'),0)-COALESCE((SELECT SUM(amount) FROM expenses WHERE campaign_id=? AND status='approved'),0)",(row['campaign_id'],row['campaign_id'])).fetchone()[0]
+            available = available_to_approve(db, row['campaign_id'])
             if row['amount']>available: raise HTTPException(409,'Khoản chi vượt số dư đã đối soát của chiến dịch.')
         from backend.evidence import decision_evidence
         alerts = decision_evidence(db,row,user,payload)
