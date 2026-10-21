@@ -1,0 +1,25 @@
+/* Lightweight gate; once unlocked, unchanged AUREVA App is rendered. */
+.pg-page,.pg-loading{font-family:'Be Vietnam Pro',system-ui,sans-serif;min-height:100vh;background:#f2f7f8;color:#163b4a}
+.pg-loading{display:grid;place-items:center;font-size:13px;color:#4c7680}
+.pg-shell{max-width:1100px;margin:auto;padding:34px 22px 80px}
+.pg-back{color:#2d6873;text-decoration:none;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:12px;margin-bottom:30px}
+.pg-card{max-width:730px;margin:15px auto 0;border:1px solid #e3eded;background:#fff;border-radius:26px;box-shadow:0 24px 65px #0a3b4a18;padding:45px 50px}
+.pg-icon{display:grid;place-items:center;width:61px;height:61px;background:#e5f3f4;color:#146577;border-radius:17px;margin-bottom:22px}
+.pg-kicker{display:flex;gap:8px;align-items:center;font-size:11px;letter-spacing:.1em;color:#4a8790;font-weight:800}
+.pg-card h1{font-size:clamp(26px,4.5vw,43px);line-height:1.24;letter-spacing:-.04em;margin:15px 0;color:#163b4a}
+.pg-card h1 em{font-style:normal;color:#207d82}
+.pg-card p{line-height:1.9;color:#5e7c84;font-size:13px;max-width:590px}
+.pg-card form{margin-top:28px}
+.pg-card form label{font-size:12px;font-weight:750;color:#365d66}
+.pg-input-row{position:relative;display:flex;align-items:center;gap:10px;border:1px solid #cfdddd;border-radius:13px;padding:6px 14px;margin-top:9px;color:#48828a;background:#f9fcfc}
+.pg-input-row input{flex:1;border:0!important;background:transparent!important;font-family:inherit;color:#1a4c58;font-size:14px;outline:0!important;box-shadow:none!important;padding:10px!important;width:100%;margin:0!important;min-height:36px}
+.pg-card form button{margin-top:15px;display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:13px 20px;min-height:46px;background:#12667a;color:#fff;border:0;border-radius:11px;font-family:inherit;font-weight:750;cursor:pointer}
+.pg-card form button:disabled{cursor:not-allowed;opacity:.6}
+.pg-error{color:#a1463c;background:#fff0ec;border-radius:11px;padding:12px 14px;font-size:12px;margin-top:17px;line-height:1.7}
+.pg-security{display:flex;gap:12px;align-items:flex-start;margin-top:29px;border-top:1px solid #e1ebed;padding-top:21px;color:#52777e;font-size:11px;line-height:1.75}
+.pg-security svg{flex-shrink:0;color:#247875}
+@media(max-width:650px){.pg-shell{padding:18px 14px 50px}.pg-card{padding:26px 21px;border-radius:19px;margin:0}.pg-back{margin-bottom:18px}}
+/* Presentation mode banner, visible only after gated server response. */
+.aureva-presentation-banner{background:#e8f4ed;border:1px solid #b8d9cc;color:#285e55;padding:10px 15px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:13px;font-family:'Be Vietnam Pro',sans-serif;font-size:12px;line-height:1.65}
+.aureva-presentation-banner strong{font-weight:850}
+.aureva-presentation-banner button{background:#1a6863;border:1px solid #1a6863;border-radius:8px;color:white;padding:7px 12px;font-size:11px;font-family:inherit;font-weight:750;cursor:pointer}
