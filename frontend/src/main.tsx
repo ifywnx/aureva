@@ -11,6 +11,7 @@ import {ActivityInsights} from './ActivityInsights';
 import {JourneyFlow} from './JourneyFlow';
 import {AurevaChat} from './AurevaChat';
 import {PublicDemo} from './PublicDemo';
+import {PresentationGate} from './PresentationGate';
 import {DemoRoleBar,type DemoRole} from './DemoRoleBar';
 import {PublicIntro,HumanStory,TechnologyShowcase,TransparencyHub} from './AurevaStory';
 import './style.css';
@@ -35,6 +36,7 @@ function App(){
  const [dashboardState,setDashboardState]=useState<'loading'|'ready'|'failed'>('loading');
  const [page,setPage]=useState('overview'),[modal,setModal]=useState(''),[selected,setSelected]=useState<Campaign|null>(null),[detail,setDetail]=useState<Detail|null>(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[campaignQuery,setCampaignQuery]=useState('');
  const [demoEnabled,setDemoEnabled]=useState(false);
+ const [demoMode,setDemoMode]=useState('off');
  async function refresh(u:User|null=user,keepDetail=true){
    try{
      const dashboard=await api<Dashboard>('/public/dashboard');
@@ -44,8 +46,14 @@ function App(){
    if(keepDetail&&selected){setDetail(await api('/public/campaigns/'+selected.id));setReports(await api('/public/campaigns/'+selected.id+'/reports'));}
  }
  useEffect(()=>{api<User>('/auth/me').then(u=>{setUser(u);return refresh(u)}).catch(()=>refresh(null).catch(e=>setError(e.message)));},[]);
- useEffect(()=>{api<{enabled:boolean}>('/demo/status').then(data=>setDemoEnabled(data.enabled===true)).catch(()=>setDemoEnabled(false));},[]);
+ useEffect(()=>{api<{enabled:boolean;mode:string}>('/demo/status').then(data=>{setDemoEnabled(data.enabled===true);setDemoMode(data.mode||'off')}).catch(()=>{setDemoEnabled(false);setDemoMode('off')});},[]);
  async function run(action:()=>Promise<void>){setBusy(true);setError('');setNotice('');try{await action();return true}catch(e){setError(e instanceof Error?e.message:'Không kết nối được máy chủ.');return false}finally{setBusy(false)}}
+ async function exitPresentation(){
+  await run(async()=>{
+   await api('/demo/lock',{});
+   window.location.assign('/');
+  });
+ }
  async function switchDemo(role:DemoRole){await run(async()=>{
    const account=await api<User>('/demo/switch',{role});
    setUser(account);setSelected(null);setDetail(null);setReports([]);setModal('');
@@ -83,7 +91,12 @@ function App(){
  function navigate(nextPage:string){setPage(nextPage);window.scrollTo({top:0,behavior:'auto'});}
  return <div className="shell identity-shell"><ScrollProgress/>
  <AurevaHeader page={page} user={user} onNavigate={navigate} onLogin={()=>open('login')} onLogout={()=>run(async()=>{await api('/auth/logout',{});setUser(null);setWorkspace({donations:[],expenses:[]});navigate('overview');setNotice('Đã đăng xuất.');})}/>
- <DemoRoleBar enabled={demoEnabled} user={user} busy={busy} onSwitch={role=>void switchDemo(role)}/>
+ {demoEnabled&&demoMode==='presentation'&&<div className="aureva-presentation-banner">
+   <strong>CHẾ ĐỘ THUYẾT TRÌNH</strong>
+   <span>3 tài khoản thử · dữ liệu database riêng · AI thật · Sepolia testnet</span>
+   <button type="button" disabled={busy} onClick={()=>void exitPresentation()}>Thoát chế độ thuyết trình</button>
+  </div>}
+  <DemoRoleBar enabled={demoEnabled} user={user} busy={busy} onSwitch={role=>void switchDemo(role)}/>
  <div className="main">
  <main className="aureva-main"><PageMotion page={page}>{error&&!modal&&<div role="alert" className="alert error">{error}</div>}{notice&&<div role="status" className="alert success">{notice}</div>}
  {(page==='overview'||page==='campaigns')&&<>{page==='overview'&&<><PublicIntro data={data} dataUnavailable={dashboardState==='failed'} onExplore={()=>navigate('campaigns')} onTransparency={()=>navigate('transparency')}/><JourneyFlow onTransparency={()=>navigate('transparency')}/></>}
@@ -157,6 +170,12 @@ function Metric({label,value,icon}:{label:string;value:string;icon?:React.ReactN
  </motion.div>;
 }
 function Records({items,action,publicView=false}:{items:RecordItem[];action?:(r:RecordItem)=>React.ReactNode;publicView?:boolean}){return !items.length?<div className="empty compact">Chưa có giao dịch phù hợp.</div>:<div className="records">{items.map(r=><article key={r.id}><div className="record-line"><div><b>{r.purpose||r.campaign_title||'Đóng góp cứu trợ'}</b><small>{new Date(r.created).toLocaleString('vi-VN')}{!publicView&&r.reference?' · Mã: '+r.reference:''}{!publicView&&r.vendor?' · '+r.vendor:''}</small></div><strong>{money(r.amount)}</strong><span className={'badge '+(r.status||'confirmed')}>{statuses[r.status]||'Đã đối soát'}</span></div>{r.reason&&<p className="reason">Lý do: {r.reason}</p>}{action?.(r)}</article>)}</div>}
-// The ?demo=1 sandbox NEVER mounts the production API-driven application.
-const publicDemo = new URLSearchParams(window.location.search).get('demo') === '1';
-createRoot(document.getElementById('root')!).render(publicDemo ? <PublicDemo/> : <App/>);
+// The public entry now unlocks a REAL backend, scoped to a dedicated demo schema.
+// The previous browser-only simulation remains at ?sandbox=1 for offline exercises.
+const query = new URLSearchParams(window.location.search);
+const presentationRequested = query.get('demo') === '1';
+const offlineSandboxRequested = query.get('sandbox') === '1';
+createRoot(document.getElementById('root')!).render(
+ presentationRequested ? <PresentationGate><App/></PresentationGate> :
+ offlineSandboxRequested ? <PublicDemo/> : <App/>
+);
