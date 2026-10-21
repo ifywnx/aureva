@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from psycopg import IntegrityError as PostgresIntegrityError
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from backend.presentation import push_schema, pop_schema
+from backend import presentation
 
 ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = Path(os.getenv('AUREVA_DB', str(ROOT / 'data/aureva.db')))
@@ -95,8 +96,9 @@ async def guard(request: Request, call_next):
                 same_host_presentation = (
                     request.headers.get('host','').lower().endswith('.vercel.app')
                     and origin == 'https://' + request.headers.get('host','').lower()
-                    and (request.url.path in ('/api/demo/unlock','/api/demo/lock')
-                         or request.cookies.get('aureva_presentation'))
+                    and (request.url.path == '/api/demo/unlock'
+                         or request.url.path == '/api/demo/lock'
+                         or presentation.is_presentation_request())
                     and os.getenv('VERCEL_ENV') == 'production'
                 )
                 if not (same_host_preview or same_host_presentation):
