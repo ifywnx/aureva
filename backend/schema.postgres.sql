@@ -9,6 +9,13 @@ CREATE TABLE attempts(key TEXT PRIMARY KEY, count BIGINT NOT NULL, expires BIGIN
 ALTER TABLE attempts ENABLE ROW LEVEL SECURITY;
 CREATE TABLE campaigns(id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL, location TEXT NOT NULL, target BIGINT NOT NULL CHECK(target>0), owner_id TEXT NOT NULL REFERENCES users(id), created TEXT NOT NULL);
 ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
+CREATE TABLE IF NOT EXISTS campaign_covers (
+  campaign_id TEXT PRIMARY KEY REFERENCES campaigns(id) ON DELETE CASCADE,
+  content BYTEA NOT NULL,
+  sha256 TEXT NOT NULL,
+  updated TEXT NOT NULL
+);
+ALTER TABLE campaign_covers ENABLE ROW LEVEL SECURITY;
 CREATE TABLE donations(id TEXT PRIMARY KEY, campaign_id TEXT NOT NULL REFERENCES campaigns(id), donor_id TEXT NOT NULL REFERENCES users(id), amount BIGINT NOT NULL CHECK(amount>0), reference TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created TEXT NOT NULL, UNIQUE(campaign_id,reference));
 ALTER TABLE donations ENABLE ROW LEVEL SECURITY;
 CREATE TABLE expenses(id TEXT PRIMARY KEY, campaign_id TEXT NOT NULL REFERENCES campaigns(id), creator_id TEXT NOT NULL REFERENCES users(id), amount BIGINT NOT NULL CHECK(amount>0), purpose TEXT NOT NULL, vendor TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', reason TEXT, reviewer_id TEXT REFERENCES users(id), created TEXT NOT NULL);

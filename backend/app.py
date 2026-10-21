@@ -33,6 +33,8 @@ def init_db():
         ''')
         from backend.evidence import init_schema
         init_schema(db)
+        from backend.campaign_media import init_sqlite
+        init_sqlite(db)
 
 @contextmanager
 def connect(write=False):
@@ -77,7 +79,16 @@ async def guard(request: Request, call_next):
         origin = request.headers.get('origin')
         allowed = os.getenv('AUREVA_ORIGIN', 'http://127.0.0.1:8001')
         if origin and origin not in (allowed, 'http://localhost:8001'):
-            return JSONResponse({'detail':'Nguồn yêu cầu không được phép.'}, status_code=403)
+            # Preview builds have unique URLs. Allow same-host HTTPS origins only on
+            # Vercel preview and only when the isolated preview DB schema is active.
+            host=request.headers.get('host','').lower()
+            same_host_preview=(
+                os.getenv('AUREVA_DB_SCHEMA')=='aureva_preview'
+                and host.endswith('.vercel.app')
+                and origin=='https://'+host
+            )
+            if not same_host_preview:
+                return JSONResponse({'detail':'Nguồn yêu cầu không được phép.'}, status_code=403)
     response = await call_next(request)
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['Referrer-Policy'] = 'same-origin'
@@ -90,6 +101,10 @@ def current_user(request: Request):
     with connect() as db:
         user = db.execute('SELECT u.* FROM users u JOIN sessions s ON u.id=s.user_id WHERE s.token=? AND s.expires>?', (digest(token), int(time.time()))).fetchone()
     if not user: raise HTTPException(401, 'Vui lòng đăng nhập.')
+    if user['id'] in ('aureva_demo_donor_v1', 'aureva_demo_manager_v1', 'aureva_demo_approver_v1'):
+        from backend.demo import enabled as demo_enabled
+        if not demo_enabled():
+            raise HTTPException(401, 'Phiên trình diễn đã kết thúc.')
     return dict(user)
 
 def require(user, *roles):
@@ -98,6 +113,8 @@ def require(user, *roles):
 def campaign_access(db, campaign_id, user):
     campaign = db.execute('SELECT * FROM campaigns WHERE id=?', (campaign_id,)).fetchone()
     if not campaign: raise HTTPException(404, 'Không tìm thấy chiến dịch.')
+    if user['id'] == 'aureva_demo_approver_v1' and campaign['owner_id'] != 'aureva_demo_manager_v1':
+        raise HTTPException(403, 'Tài khoản trình diễn chỉ truy cập được chiến dịch demo.')
     if user['role'] != 'approver' and campaign['owner_id'] != user['id']:
         raise HTTPException(403, 'Bạn không phụ trách chiến dịch này.')
     return campaign
@@ -127,9 +144,12 @@ class ExpenseInput(Input):
     amount: int = Field(strict=True,gt=0,le=1_000_000_000_000)
     purpose: str = Field(min_length=5,max_length=1000)
     vendor: str = Field(min_length=2,max_length=200)
+class DonationRejection(Input):
+    reason: str = Field(min_length=5,max_length=1000)
 class Decision(Input):
     status: Literal['approved','rejected']
     reason: str = Field(min_length=5,max_length=1000)
+    warnings_acknowledged: bool = False
 
 @app.post('/api/auth/register', status_code=201)
 def register(payload: Register):
@@ -172,22 +192,48 @@ def logout(request: Request,response: Response):
 CAMPAIGN_SQL='''SELECT c.*, u.name AS manager_name,
 COALESCE((SELECT SUM(amount) FROM donations WHERE campaign_id=c.id AND status='confirmed'),0) AS raised,
 COALESCE((SELECT SUM(amount) FROM expenses WHERE campaign_id=c.id AND status='approved'),0) AS spent,
-(SELECT COUNT(*) FROM donations WHERE campaign_id=c.id AND status='confirmed') AS contribution_count
-FROM campaigns c JOIN users u ON c.owner_id=u.id'''
+(SELECT COUNT(*) FROM donations WHERE campaign_id=c.id AND status='confirmed') AS contribution_count,
+EXISTS(SELECT 1 FROM audit a WHERE a.entity_id=c.id AND a.action='campaign.closed') AS is_closed,
+CASE WHEN cover.campaign_id IS NOT NULL
+     THEN '/api/public/campaigns/' || c.id || '/cover?v=' || substr(cover.sha256,1,12)
+     ELSE NULL END AS cover_url
+FROM campaigns c JOIN users u ON c.owner_id=u.id
+LEFT JOIN campaign_covers cover ON cover.campaign_id=c.id'''
 @app.get('/api/public/dashboard')
 def dashboard():
     with connect() as db:
         campaigns=[dict(r) for r in db.execute(CAMPAIGN_SQL+' ORDER BY c.created DESC')]
-    return {'campaigns':campaigns,'raised':sum(c['raised'] for c in campaigns),'spent':sum(c['spent'] for c in campaigns),'contribution_count':sum(c['contribution_count'] for c in campaigns),'integrations':{'ai':'configured' if os.getenv('GEMINI_API_KEY') and os.getenv('GEMINI_MODEL') else 'not_configured','blockchain':'configured' if all(os.getenv(k) for k in ('SEPOLIA_RPC_URL','BLOCKCHAIN_PRIVATE_KEY','AUREVA_CONTRACT_ADDRESS')) else 'not_configured'}}
+    return {'campaigns':campaigns,'raised':sum(c['raised'] for c in campaigns),'spent':sum(c['spent'] for c in campaigns),'contribution_count':sum(c['contribution_count'] for c in campaigns),'integrations':{'ai':'configured' if os.getenv('OPENAI_API_KEY') else 'not_configured','blockchain':'configured' if all(os.getenv(k) for k in ('SEPOLIA_RPC_URL','AUREVA_CONTRACT_ADDRESS')) else 'not_configured'}}
 
 @app.post('/api/campaigns',status_code=201)
 def create_campaign(payload: CampaignInput,user=Depends(current_user)):
     require(user,'manager')
     id=uid()
+    is_demo_manager = user['id'] == 'aureva_demo_manager_v1' and user['email'] == 'preview-manager@aureva.invalid'
+    title = '[DEMO] ' + payload.title[:153] if is_demo_manager else payload.title
     with connect(write=True) as db:
-        db.execute('INSERT INTO campaigns VALUES(?,?,?,?,?,?,?)',(id,payload.title,payload.description,payload.location,payload.target,user['id'],now()))
-        audit(db,user,'campaign.created',id,payload.model_dump())
+        db.execute('INSERT INTO campaigns VALUES(?,?,?,?,?,?,?)',(id,title,payload.description,payload.location,payload.target,user['id'],now()))
+        audit(db,user,'campaign.created',id,{**payload.model_dump(),'is_demo':is_demo_manager})
     return {'id':id}
+
+def ensure_campaign_active(db,id):
+    """Lifecycle events are append-only in audit: no production schema migration."""
+    if db.execute("SELECT 1 FROM audit WHERE entity_id=? AND action='campaign.closed' LIMIT 1",(id,)).fetchone():
+        raise HTTPException(409,'Chiến dịch đã kết thúc, không nhận thêm đóng góp hoặc đề xuất chi.')
+
+@app.post('/api/campaigns/{id}/close')
+def close_campaign(id:str,user=Depends(current_user)):
+    require(user,'manager')
+    with connect(write=True) as db:
+        campaign_access(db,id,user)
+        ensure_campaign_active(db,id)
+        pending=db.execute("""SELECT
+            (SELECT COUNT(*) FROM donations WHERE campaign_id=? AND status='pending')+
+            (SELECT COUNT(*) FROM expenses WHERE campaign_id=? AND status='pending')""",(id,id)).fetchone()[0]
+        if pending:
+            raise HTTPException(409,'Cần đối soát hoặc xử lý tất cả đóng góp và khoản chi đang chờ trước khi kết thúc.')
+        audit(db,user,'campaign.closed',id,{'status':'closed'})
+    return {'id':id,'status':'closed'}
 
 @app.get('/api/public/campaigns/{id}')
 def campaign_detail(id:str):
@@ -204,7 +250,12 @@ def donate(id:str,payload:DonationInput,user=Depends(current_user)):
     require(user,'donor')
     donation_id=uid()
     with connect(write=True) as db:
-        if not db.execute('SELECT id FROM campaigns WHERE id=?',(id,)).fetchone(): raise HTTPException(404,'Không tìm thấy chiến dịch.')
+        campaign=db.execute('SELECT id,owner_id FROM campaigns WHERE id=?',(id,)).fetchone()
+        if not campaign: raise HTTPException(404,'Không tìm thấy chiến dịch.')
+        # Never let a classroom demo identity create a claim in a real campaign.
+        if user['id']=='aureva_demo_donor_v1' and campaign['owner_id']!='aureva_demo_manager_v1':
+            raise HTTPException(403,'Tài khoản trình diễn chỉ được ghi nhận trong chiến dịch DEMO.')
+        ensure_campaign_active(db,id)
         try: db.execute('INSERT INTO donations(id,campaign_id,donor_id,amount,reference,created) VALUES(?,?,?,?,?,?)',(donation_id,id,user['id'],payload.amount,payload.reference,now()))
         except (sqlite3.IntegrityError,PostgresIntegrityError): raise HTTPException(409,'Mã tham chiếu đã tồn tại trong chiến dịch.')
         audit(db,user,'donation.submitted',donation_id,{'amount':payload.amount})
@@ -217,9 +268,13 @@ def workspace(user=Depends(current_user)):
             donations=db.execute('SELECT d.*, c.title AS campaign_title FROM donations d JOIN campaigns c ON c.id=d.campaign_id WHERE d.donor_id=? ORDER BY d.created DESC',(user['id'],)).fetchall()
             expenses=[]
         else:
-            where=' WHERE c.owner_id=?' if user['role']=='manager' else ''
-            args=(user['id'],) if user['role']=='manager' else ()
-            donations=db.execute('SELECT d.*, c.title AS campaign_title FROM donations d JOIN campaigns c ON c.id=d.campaign_id'+where+' ORDER BY d.created DESC',args).fetchall()
+            demo_approver = user['id'] == 'aureva_demo_approver_v1'
+            where = ' WHERE c.owner_id=?' if (user['role']=='manager' or demo_approver) else ''
+            args = ('aureva_demo_manager_v1',) if demo_approver else (user['id'],) if user['role']=='manager' else ()
+            # Approvers inspect expense evidence only. Donor bank references and
+            # identities must never enter the approver workspace API response.
+            donations=(db.execute('SELECT d.*, c.title AS campaign_title FROM donations d JOIN campaigns c ON c.id=d.campaign_id'+where+' ORDER BY d.created DESC',args).fetchall()
+                if user['role']=='manager' else [])
             expenses=db.execute('SELECT e.*, c.title AS campaign_title FROM expenses e JOIN campaigns c ON c.id=e.campaign_id'+where+' ORDER BY e.created DESC',args).fetchall()
     from backend.evidence import doc_public
     with connect() as db:
@@ -244,12 +299,27 @@ def confirm_donation(id:str,user=Depends(current_user)):
         audit(db,user,'donation.confirmed',id,{'amount':row['amount']})
     return {'ok':True}
 
+@app.post('/api/donations/{id}/reject')
+def reject_donation(id:str,payload:DonationRejection,user=Depends(current_user)):
+    """Manual reconciliation can decline an unsupported transfer claim."""
+    require(user,'manager')
+    with connect(write=True) as db:
+        row=db.execute('SELECT * FROM donations WHERE id=?',(id,)).fetchone()
+        if not row: raise HTTPException(404,'Không tìm thấy khoản đóng góp.')
+        campaign_access(db,row['campaign_id'],user)
+        if row['status']!='pending':
+            raise HTTPException(409,'Khoản đóng góp đã được xử lý, không thể từ chối lại.')
+        db.execute("UPDATE donations SET status='rejected' WHERE id=?",(id,))
+        audit(db,user,'donation.rejected',id,{'reason':payload.reason})
+    return {'id':id,'status':'rejected'}
+
 @app.post('/api/campaigns/{id}/expenses',status_code=201)
 def expense(id:str,payload:ExpenseInput,user=Depends(current_user)):
     require(user,'manager')
     expense_id=uid()
     with connect(write=True) as db:
         campaign_access(db,id,user)
+        ensure_campaign_active(db,id)
         db.execute('INSERT INTO expenses(id,campaign_id,creator_id,amount,purpose,vendor,created) VALUES(?,?,?,?,?,?,?)',(expense_id,id,user['id'],payload.amount,payload.purpose,payload.vendor,now()))
         audit(db,user,'expense.submitted',expense_id,payload.model_dump())
     return {'id':expense_id,'status':'pending'}
@@ -260,26 +330,42 @@ def decide(id:str,payload:Decision,user=Depends(current_user)):
     with connect(write=True) as db:
         row=db.execute('SELECT * FROM expenses WHERE id=?',(id,)).fetchone()
         if not row: raise HTTPException(404,'Không tìm thấy khoản chi.')
+        if user['id']=='aureva_demo_approver_v1':
+            demo_campaign=db.execute('SELECT owner_id FROM campaigns WHERE id=?',(row['campaign_id'],)).fetchone()
+            if not demo_campaign or demo_campaign['owner_id']!='aureva_demo_manager_v1':
+                raise HTTPException(403,'Tài khoản trình diễn chỉ được duyệt chiến dịch demo.')
         if row['creator_id']==user['id']: raise HTTPException(403,'Không được tự duyệt khoản chi.')
         if row['status']!='pending': raise HTTPException(409,'Khoản chi đã có quyết định.')
         if payload.status=='approved':
             available=db.execute("SELECT COALESCE((SELECT SUM(amount) FROM donations WHERE campaign_id=? AND status='confirmed'),0)-COALESCE((SELECT SUM(amount) FROM expenses WHERE campaign_id=? AND status='approved'),0)",(row['campaign_id'],row['campaign_id'])).fetchone()[0]
             if row['amount']>available: raise HTTPException(409,'Khoản chi vượt số dư đã đối soát của chiến dịch.')
         from backend.evidence import decision_evidence
-        decision_evidence(db,row,user,payload)
+        alerts = decision_evidence(db,row,user,payload)
         db.execute('UPDATE expenses SET status=?,reason=?,reviewer_id=? WHERE id=?',(payload.status,payload.reason,user['id'],id))
-        audit(db,user,'expense.'+payload.status,id,{'amount':row['amount'],'reason':payload.reason,'blockchain':'not_configured'})
-    return {'status':payload.status,'blockchain':'not_configured'}
+        audit(db,user,'expense.'+payload.status,id,{
+            'amount':row['amount'],'reason':payload.reason,
+            'warnings_count':len(alerts),'warnings_acknowledged':payload.status=='approved' and payload.warnings_acknowledged,
+            'blockchain':'pending'
+        })
+    return {'status':payload.status,'blockchain':'pending','warnings_count':len(alerts)}
 
 @app.get('/api/health')
 def health():
     with connect() as db: db.execute('SELECT 1')
-    return {'status':'ok','database':'postgresql' if os.getenv('DATABASE_URL') and not os.getenv('AUREVA_DB') else 'sqlite','ai':'configured' if os.getenv('GEMINI_API_KEY') and os.getenv('GEMINI_MODEL') else 'not_configured','blockchain':'configured' if all(os.getenv(k) for k in ('SEPOLIA_RPC_URL','BLOCKCHAIN_PRIVATE_KEY','AUREVA_CONTRACT_ADDRESS')) else 'not_configured'}
+    return {'status':'ok','database':'postgresql' if os.getenv('DATABASE_URL') and not os.getenv('AUREVA_DB') else 'sqlite','ai':'configured' if os.getenv('OPENAI_API_KEY') else 'not_configured','blockchain':'configured' if all(os.getenv(k) for k in ('SEPOLIA_RPC_URL','AUREVA_CONTRACT_ADDRESS')) else 'not_configured'}
 
 from backend.evidence import register as register_evidence
 register_evidence(app)
 from backend.chain import register as register_chain
 register_chain(app)
+from backend.campaign_media import register as register_campaign_media
+register_campaign_media(app)
+from backend.activity import register as register_activity
+register_activity(app)
+from backend.assistant import register as register_assistant
+register_assistant(app)
+from backend.demo import register as register_demo
+register_demo(app)
 
 dist=ROOT/'frontend/dist'
 if dist.exists():
@@ -287,4 +373,8 @@ if dist.exists():
     @app.get('/{path:path}')
     def frontend(path:str):
         if path.startswith('api/'): raise HTTPException(404,'Not found')
+        # Only reviewed public static artifacts may be served by the API process.
+        # No user-controlled filesystem paths or private configuration files.
+        if path in ('deploy-sepolia.html','aureva-registry-artifact.json'):
+            return FileResponse(dist/path, media_type='text/html' if path.endswith('.html') else 'application/json')
         return FileResponse(dist/'index.html')

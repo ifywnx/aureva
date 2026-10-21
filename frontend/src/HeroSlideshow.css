@@ -1,0 +1,35 @@
+/* AUREVA V5 · restrained cinematic humanitarian photo carousel */
+.identity-shell .v5-hero-slideshow{position:absolute;inset:0;isolation:isolate;touch-action:pan-y}
+.identity-shell .v5-hero-slide-stack{position:absolute;inset:0;overflow:hidden;background:#7195b7}
+.identity-shell .v5-hero-slide{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;filter:saturate(1.025) contrast(1.02);will-change:opacity}
+.identity-shell .v5-hero-slideshow .v5-photo-country{pointer-events:none}
+.identity-shell .v5-hero-slideshow .v5-photo-credit{pointer-events:none;right:16px;max-width:calc(100% - 42px);font-weight:600;line-height:1.5;text-shadow:0 2px 7px #08244ef0}
+.identity-shell .v5-slideshow-toolbar{
+ position:absolute;right:24px;bottom:152px;z-index:5;
+ display:flex;align-items:center;gap:8px;padding:7px;
+ color:#fff;background:#0b28597d;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+ border:1px solid #f5faff5c;border-radius:999px;box-shadow:0 10px 24px #001b4470;
+}
+.identity-shell .v5-slideshow-toolbar button{display:grid;place-items:center;flex-shrink:0;border:0;box-shadow:none;color:#fff;cursor:pointer}
+.identity-shell .v5-slide-arrow,.identity-shell .v5-slide-play{height:30px;width:30px;border-radius:50%;background:#fff2;transition:background .2s ease}
+.identity-shell .v5-slide-arrow:hover,.identity-shell .v5-slide-play:hover{background:#ffffff4a}
+.identity-shell .v5-slide-indicators{display:flex;align-items:center;gap:1px}
+.identity-shell .v5-slide-indicators button{height:30px;min-width:27px;width:27px;background:transparent;border-radius:15px}
+.identity-shell .v5-slide-indicators button span{width:6px;height:6px;border-radius:6px;background:#e5f1ffab;transition:width .25s ease,background .25s ease}
+.identity-shell .v5-slide-indicators button.active span{width:18px;background:#fff}
+.identity-shell .v5-slideshow-toolbar button:focus-visible{outline:2px solid #ffca79;outline-offset:3px}
+.identity-shell .v5-hero-slide-stack:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,#03275058 0%,transparent 32%),linear-gradient(90deg,#00172b17,transparent 20%)}
+@media(max-width:820px){
+ .identity-shell .v5-slideshow-toolbar{right:14px;bottom:132px}
+ .identity-shell .v5-hero-slideshow .v5-photo-credit{bottom:10px;left:14px;font-size:8px}
+ .identity-shell .v5-hero-slideshow .v5-photo-country{top:16px;left:16px;padding:10px 12px}
+}
+@media(max-width:420px){
+ .identity-shell .v5-slideshow-toolbar{bottom:132px;padding:5px;gap:5px}
+ .identity-shell .v5-slide-arrow,.identity-shell .v5-slide-play{width:28px;height:28px}
+ .identity-shell .v5-slide-indicators button{min-width:24px;width:24px}
+}
+@media(prefers-reduced-motion:reduce){
+ .identity-shell .v5-slide-indicators button span{transition:none}
+ .identity-shell .v5-hero-slide{will-change:auto}
+}

@@ -1,72 +1,102 @@
-# AUREVA
+# AUREVA — Trao gửi yêu thương, rõ từng đóng góp.
 
-**Xây dựng nền tảng minh bạch hóa hoạt động quyên góp cứu trợ ứng dụng AI và Blockchain.**
+**Tên đề tài:** AUREVA – Xây dựng nền tảng minh bạch hóa hoạt động quyên góp cứu trợ ứng dụng AI và Blockchain.
 
-Trao gửi yêu thương, rõ từng đóng góp.
+Đồ án cuối kỳ **Web Nâng Cao**, báo cáo **28/10/2026** (5–7 phút), với giao diện tiếng Việt, nghiệp vụ cứu trợ và dấu xác minh dữ liệu công khai.
 
-Ứng dụng độc lập, không phụ thuộc Sites/hosting ChatGPT. Frontend React + TypeScript + Vite; API FastAPI; dữ liệu SQLite lưu tại `data/aureva.db`. Khung công nghệ tham khảo ReliefChain/AapdaSetu; nghiệp vụ và giao diện AUREVA được viết riêng. Repo tham khảo không được nhúng vào dự án này.
+> **Giới hạn trung thực:** Đây là nền tảng ghi nhận/đối soát khoản quyên góp và chứng thực *quyết định, báo cáo*. AUREVA hiện **không** chuyển tiền qua blockchain, không xác nhận giao dịch ngân hàng tự động, không xác nhận hóa đơn là hợp pháp. AI chỉ gợi ý cảnh báo; người có thẩm quyền ra quyết định. Tên chiến dịch và số tiền demo phải được ghi rõ là dữ liệu thử.
 
-## Chạy trên Mac
+## Công nghệ
 
-```sh
-cd /Users/macm1/Documents/Codex/AUREVA
+- Frontend: React 18, TypeScript, Vite, Framer Motion, Lucide.
+- Backend: FastAPI, Pydantic, Python 3.12.
+- Persistence: PostgreSQL (Supabase ở bản hosted) hoặc SQLite trên volume bền vững khi phát triển.
+- AI: **OpenAI Responses API**, đọc JPG/PNG/PDF và trả JSON có cấu trúc; không dùng kết quả lập sẵn khi thiếu key.
+- Blockchain: smart contract `AurevaRegistry.sol` trên **Ethereum Sepolia** (chain ID 11155111), ghi SHA-256 của bản chốt; có thể ký bằng MetaMask.
+- PDF: ReportLab; báo cáo chốt cố định và kiểm tra SHA-256 trong trình duyệt.
+
+## Nghiệp vụ đã được lập trình
+
+1. Donor đăng ký, đăng nhập, ghi nhận thông tin đóng góp. Khoản tiền chỉ tính vào quỹ sau khi manager **đối soát thủ công**.
+2. Manager tạo chiến dịch, thay ảnh bìa, xem số liệu, đối soát đóng góp, đề xuất khoản chi và tải chứng từ.
+3. Manager nhấn phân tích AI: hệ thống đọc chứng từ và đối chiếu tổng tiền, nhà cung cấp, số hóa đơn, hash file/trùng lặp.
+4. Approver duyệt hoặc từ chối với lý do. Khi **duyệt một hồ sơ có cảnh báo**, backend bắt buộc xác nhận đã kiểm tra cảnh báo và giải trình đủ dài; nội dung được đưa vào bản ghi SHA-256.
+5. Quyết định sinh ra bản ghi `attestation` ở trạng thái `pending`. Chỉ sau khi giao dịch Sepolia hợp lệ và đủ xác nhận mới mang trạng thái `confirmed`. Người xem có thể kiểm tra trực tiếp hợp đồng.
+6. Dashboard đọc tổng từ database. PDF tạo từ snapshot cố định; người xem tải file và kiểm tra SHA-256.
+7. Manager có thể **kết thúc chiến dịch** khi không còn đóng góp/khoản chi chờ xử lý. Sự kiện đóng được lưu trong audit log. Không mở nhận tiền hoặc khoản chi mới sau khi đóng; báo cáo cũ vẫn truy cập được.
+
+Các vai trò `donor`, `manager`, `approver` được kiểm tra tại server. Đăng ký tự phục vụ luôn tạo `donor`. Không có số tiền quyên góp mẫu nào được tự động seed thành dữ liệu thật.
+
+## Chạy trên MacBook / local
+
+```bash
+git clone https://github.com/ifywnx/aureva.git
+cd aureva
+git switch feat/premium-motion-ui-20261020
+# Cài Python 3.12, Node 22+ và uv nếu máy chưa có.
+uv venv --python 3.12 .venv
+uv pip install --python .venv/bin/python -r requirements.lock.txt
+cp .env.example .env
+npm --prefix frontend ci
+npm --prefix frontend run build
 ./scripts/start.sh
 ```
 
-Mở http://127.0.0.1:8001 — API docs: http://127.0.0.1:8001/docs.
+Mở **http://127.0.0.1:8001** và API docs **http://127.0.0.1:8001/docs**. Trong local, SQLite mặc định được lưu tại `data/aureva.db` (không commit).
 
-Tài khoản local đã tạo nằm trong `data/local-accounts.txt` (chỉ chủ máy được đọc, đã ignore khỏi Git). Có 3 vai trò; không có số tiền, chiến dịch hay giao dịch mẫu được nạp sẵn. Mật khẩu được hash bằng scrypt; cookie phiên HttpOnly, SameSite=Strict, hết hạn sau 8 giờ. Phiên lưu trong database, logout thu hồi phiên.
+Tài khoản manager/approver phải được cấp thủ công (không cho người dùng tự nhận quyền):
 
-Tạo thêm tài khoản do người quản trị cấp:
-
-```sh
+```bash
 .venv/bin/python scripts/accounts.py --email manager@example.com --name 'Người phụ trách' --role manager
+.venv/bin/python scripts/accounts.py --email reviewer@example.com --name 'Người phê duyệt' --role approver
 ```
 
-Công cụ hỏi mật khẩu tương tác. Người dùng đăng ký qua website chỉ nhận quyền donor; không thể tự chọn manager/approver.
+**Không dùng mật khẩu ví dụ làm mật khẩu thật.** Script hỏi mật khẩu qua terminal. Các file trong `data/` được bỏ qua khỏi Git.
 
-## Luồng sử dụng
+## Cấu hình tích hợp
 
-1. Đăng nhập manager, tạo chiến dịch và mục tiêu VND.
-2. Đăng nhập donor, mở chiến dịch, ghi nhận khoản đóng góp và mã tham chiếu. Đây không phải cổng thanh toán; tiền chưa được tính vào tổng.
-3. Manager vào Không gian làm việc, kiểm tra tiền thực nhận rồi xác nhận đóng góp. Chỉ người phụ trách đúng chiến dịch được đối soát.
-4. Manager đề xuất khoản chi, người nhận tiền và mục đích.
-5. Approver xem khoản chi, ghi lý do và duyệt/từ chối. Server cấm tự duyệt, quyết định lặp lại và chi vượt số dư.
-6. Trang công khai tự tính tổng đóng góp đã đối soát, chi đã duyệt và số dư từ SQLite. Không hiển thị email người đóng góp hay mã chuyển khoản.
+Sử dụng `.env.example` làm mẫu, nhưng chỉ đặt secrets trong `.env` local hoặc trong **encrypted environment variables** của Vercel/Railway:
 
-Hiện tại “chi đã duyệt” là quyết định phân bổ tiền, chưa chứng minh đã thực chi/chuyển tiền. Việc xác nhận đóng góp là thủ công. Không dùng các tổng này để tuyên bố đã giải ngân ngân hàng.
+| Tên biến | Mục đích |
+|---|---|
+| `OPENAI_API_KEY` | Đọc hóa đơn bằng OpenAI và chatbot |
+| `OPENAI_MODEL` | Model thị giác/Structured Outputs, mặc định `gpt-5-mini` |
+| `DATABASE_URL` | PostgreSQL bền vững, bắt buộc trên Vercel |
+| `AUREVA_DB_SCHEMA` | `aureva` hoặc `aureva_preview` |
+| `AUREVA_ORIGIN` | HTTPS origin khớp chính xác môi trường chạy |
+| `AUREVA_SECURE_COOKIE` | `1` khi dùng HTTPS |
+| `SEPOLIA_RPC_URL` | Ethereum Sepolia RPC |
+| `AUREVA_CONTRACT_ADDRESS` | Hợp đồng đã triển khai |
+| `BLOCKCHAIN_PRIVATE_KEY` | **Không bắt buộc** khi ký qua MetaMask |
+| `AUREVA_DEMO_SWITCH` | Chỉ bật trong protected Preview có DB cô lập |
 
-## Kiểm tra và build
+Tuyệt đối không đưa API key, password kết nối database, private key, seed phrase lên GitHub, frontend hoặc trong báo cáo.
 
-```sh
-.venv/bin/python -m pytest -q
-cd frontend
-npm ci
-npm run build
+Chi tiết: [OPENAI_INTEGRATION.md](OPENAI_INTEGRATION.md), [PREVIEW_DATABASE_SETUP.md](PREVIEW_DATABASE_SETUP.md), [RAILWAY.md](RAILWAY.md).
+
+## Kiểm thử
+
+```bash
+.venv/bin/python -m pytest tests -q
+npm --prefix frontend run build
+# Tùy chọn: yêu cầu Playwright + Chromium
+.venv/bin/python tests/ui_smoke.py
 ```
 
-Sau build, khởi động lại backend để phục vụ frontend. Khi cài mới: `uv venv --python 3.12 .venv`, rồi `uv pip install --python .venv/bin/python -r requirements.lock.txt`.
+Workflow GitHub Actions: `.github/workflows/aureva-quality.yml` tự chạy test backend, build frontend và browser smoke trên **SQLite độc lập**. Kết quả CI tốt **không chứng minh** Vercel/Railway, OpenAI billable hay Sepolia thật đã chạy. Với release, bắt buộc kiểm tra thêm luồng live trên domain preview.
 
-## Đã có / còn thiếu
+## Triển khai và demo 28/10
 
-Đã có: auth, phân quyền server, phạm vi chiến dịch theo người phụ trách, ledger đóng góp/chi VND nguyên, audit log, dashboard database, kiểm tra số dư trong transaction SQLite, kiểm thử quyền và persistence ở tiến trình Python mới.
+- **Preview an toàn:** cấu hình schema PostgreSQL `aureva_preview`, database role riêng, cookie secure, Vercel Deployment Protection, và (nếu cần) nút đổi vai trò demo chỉ trên Preview.
+- **OpenAI thật:** dùng chứng từ thử đã che thông tin cá nhân, ví dụ số khai báo khác số trên hóa đơn; kiểm tra API response và cảnh báo không phải kết quả hardcode.
+- **Blockchain thật:** deploy `AurevaRegistry.sol` bằng MetaMask testnet, cấu hình RPC/address, ghi một mã băm rồi đối chiếu TX ở [Sepolia Etherscan](https://sepolia.etherscan.io/).
+- **Data bền vững:** tạo chiến dịch preview, tải lại, đăng nhập lại và kiểm tra sau redeploy.
+- **Xuất báo cáo:** tạo PDF trên API, tải xuống, kiểm tra hash của PDF, ghi dấu báo cáo qua ví và xác minh trực tiếp.
 
-Chưa có: upload hóa đơn; AI trích xuất và phát hiện bất thường; giao dịch testnet, hash báo cáo; PDF; phục hồi mật khẩu/email verification; đóng chiến dịch; điều chỉnh giao dịch; phân quyền reviewer theo tổ chức. Tích hợp AI và Blockchain trả trạng thái `not_configured`, không tạo kết quả/hashes giả.
+Luồng chạy kiểm thử và trạng thái tích hợp được mô tả trong các mục trên; toàn bộ hoạt động live phải được xác minh trên domain staging trước khi đưa lên production.
 
-Chỉ chạy loopback để phát triển. Trước deploy: HTTPS + `AUREVA_SECURE_COOKIE=1`, cấu hình `AUREVA_ORIGIN`, giới hạn request toàn hệ thống, backup, nâng cấp dependency, kiểm thử đồng thời và chính sách dữ liệu cá nhân. SQLite cần ổ đĩa persistent, không dùng filesystem tạm của serverless. Schema v1 được init idempotent; các thay đổi schema sau này cần migration versioned.
+## Trạng thái xác minh
 
-Không commit `data/`, `.env`, khóa API hoặc private key. AI sẽ cần API đọc ảnh/PDF; Blockchain cần RPC Sepolia và ví testnet riêng khi triển khai giai đoạn sau.
+Các tính năng lõi đã có unit/browser tests. Các bước **chưa thể tuyên bố hoàn thành** khi chưa có bằng chứng E2E: API OpenAI với hóa đơn thật, Sepolia transaction/receipt thật và bản deploy có PostgreSQL persistent kiểm tra sau restart.
 
-## Production (16/10/2026)
-
-URL: https://aureva-sigma.vercel.app
-
-Vercel project `aureva` (prj_UANELTCR2vVS32Vsl9yXpBFlz3WK). Supabase project `aureva` (epwojwlsibjmxhdbtsqu), hoàn toàn tách khỏi các project khác. PostgreSQL schema `aureva` không công khai qua Data API; backend dùng role riêng, không dùng superuser. File hóa đơn và PDF hiện lưu BYTEA trong database, tối đa 2 MB mỗi chứng từ.
-
-Phiên bản này đã bổ sung upload chứng từ riêng tư, gọi Gemini qua API, cảnh báo chênh lệch số tiền/trùng file/trùng số hóa đơn, yêu cầu phân tích trước khi duyệt, snapshot quyết định, báo cáo PDF tiếng Việt bất biến, kiểm tra SHA-256 trên trình duyệt, outbox giao dịch Sepolia và smart contract registry. Các mô tả “chưa có” ở mục phiên bản 0.1 bên trên được thay thế bởi mục này.
-
-AI và Blockchain CHƯA được kiểm chứng với dịch vụ thật khi chưa có cấu hình. Điền `.env`: GEMINI_API_KEY, GEMINI_MODEL, SEPOLIA_RPC_URL, BLOCKCHAIN_PRIVATE_KEY (ví riêng chỉ dùng testnet), AUREVA_CONTRACT_ADDRESS. Sau đó cấu hình tương ứng lên Vercel bằng stdin; không commit hoặc in secrets. Compile contract: `npm --prefix blockchain ci && npm --prefix blockchain run build`; triển khai bằng `.venv/bin/python scripts/deploy_contract.py` sau khi có test ETH. Backend chỉ cho chain ID 11155111.
-
-Các tài khoản đã tạo tại `data/local-accounts.txt` dùng được trên production. Không chia sẻ file này công khai. `.env.deploy` chứa credential PostgreSQL riêng và bị ignore. Chưa có dữ liệu tài chính giả được seed lên production.
-
-Deploy: `npx vercel@64.3.1 deploy --prod --scope team_0RXiQnJ9tD3DZBTSLMAiFShM`. Phải giữ AUREVA_ORIGIN=https://aureva-sigma.vercel.app, AUREVA_SECURE_COOKIE=1 và DATABASE_URL trong production. SQLite fallback bị cấm trên Vercel.
+PR đang phát triển: [#1](https://github.com/ifywnx/aureva/pull/1). Không merge hoặc promote lên production chỉ vì build thành công. Đồ án có tham khảo ý tưởng ReliefChain/AapdaSetu, nhưng thiết kế UX và nghiệp vụ AUREVA được phát triển riêng.

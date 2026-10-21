@@ -20,7 +20,7 @@ def test_invoice_api_failure_warnings_and_immutable_report(env,monkeypatch):
     assert m.post(f'/api/expenses/{eid}/document',files={'file':('test.png',png())}).status_code==201
     assert d.get(f'/api/expenses/{eid}/document').status_code==403
     assert TestClient(a.app).get(f'/api/expenses/{eid}/document').status_code==401
-    monkeypatch.delenv('GEMINI_API_KEY',raising=False)
+    monkeypatch.delenv('OPENAI_API_KEY',raising=False)
     assert m.post(f'/api/expenses/{eid}/analyze',json={}).status_code==503
     assert m.get('/api/workspace').json()['expenses'][0]['document']['ai_status']=='failed'
     # Tests stub only the provider boundary; production always makes the real API request.
@@ -34,11 +34,25 @@ def test_invoice_api_failure_warnings_and_immutable_report(env,monkeypatch):
     result=m.post(f'/api/expenses/{second}/analyze',json={}).json()
     assert any('Trùng nội dung' in x for x in result['warnings'])
     assert any('Trùng số hóa đơn' in x for x in result['warnings'])
-    assert p.post(f'/api/expenses/{eid}/decision',json=decision).status_code==200
+    # An AI warning must never be silently approved via a direct API request.
+    unacknowledged=p.post(f'/api/expenses/{eid}/decision',json=decision)
+    assert unacknowledged.status_code==409
+    assert 'cảnh báo' in unacknowledged.json()['detail']
+    short_reason=p.post(f'/api/expenses/{eid}/decision',json={
+        'status':'approved','reason':'Đã xem','warnings_acknowledged':True
+    })
+    assert short_reason.status_code==409
+    verified={**decision,'warnings_acknowledged':True}
+    approved=p.post(f'/api/expenses/{eid}/decision',json=verified)
+    assert approved.status_code==200,approved.text
+    assert approved.json()['blockchain']=='pending'
+    assert approved.json()['warnings_count']>0
     assert m.post(f'/api/expenses/{eid}/document',files={'file':('changed.png',png())}).status_code==409
     assert m.post(f'/api/expenses/{eid}/analyze',json={}).status_code==409
     att=m.get(f'/api/public/attestations/{eid}').json()
     assert att['integrity_valid'] and att['status']=='pending' and att['tx_hash'] is None
+    assert att['payload']['warnings_acknowledged'] is True
+    assert any('Chênh lệch' in w for w in att['payload']['warnings'])
     monkeypatch.delenv('BLOCKCHAIN_PRIVATE_KEY',raising=False)
     assert m.post(f'/api/attestations/{eid}/anchor',json={}).status_code==503
     report=m.post(f'/api/campaigns/{cid}/reports',json={})

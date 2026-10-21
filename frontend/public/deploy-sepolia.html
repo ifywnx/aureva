@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#0B2B54"/>
+<meta name="robots" content="noindex,nofollow"/>
+<title>AUREVA · Triển khai hợp đồng Sepolia</title>
+<script>
+  // Remove ChatGPT's presentation-only referral parameter from the address bar.
+  // Preserve routes, fragments and every unrelated query value.
+  try {
+    const address = new URL(window.location.href);
+    if (address.searchParams.get('utm_source') === 'chatgpt.com') {
+      address.searchParams.delete('utm_source');
+      window.history.replaceState(window.history.state, '', address.pathname + address.search + address.hash);
+    }
+  } catch { /* Do not block the page if history is unavailable. */ }
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
+:root{font-family:'Be Vietnam Pro',system-ui,sans-serif;color:#132f59;background:#f4f8ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% -10%,#d6e8ff,transparent 40%),#f4f8ff;min-height:100vh}
+.wrap{max-width:1010px;margin:0 auto;padding:32px 22px 70px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;align-items:center;gap:12px;color:#113a84;font-weight:800;letter-spacing:.07em;font-size:20px}.mark{height:39px;width:39px;border-radius:13px;background:linear-gradient(130deg,#268bff,#0c3ba7);display:grid;place-items:center;color:white}
+a{color:#155eef;text-decoration:none}a:hover{text-decoration:underline}.back{font-size:12px;font-weight:750}
+.hero{margin-top:46px;border:1px solid #d7e7ff;background:linear-gradient(120deg,#fff,#e7f2ff);border-radius:23px;padding:40px 43px;box-shadow:0 20px 50px #174c8c17}
+.kicker{font-size:10px;font-weight:800;letter-spacing:.15em;color:#246cbb;margin-bottom:14px}
+h1{font-size:clamp(30px,4.2vw,48px);letter-spacing:-.065em;line-height:1.4;margin:0 0 14px;color:#0e3571}
+h1 em{font-style:normal;color:#155eef}p{line-height:1.95;font-size:13px;color:#637e9f}p.lead{max-width:740px;margin-bottom:25px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:19px 0}.panel{border:1px solid #dce8f8;border-radius:17px;background:white;padding:25px;box-shadow:0 9px 30px #1755a811}
+.panel h2{font-size:16px;letter-spacing:-.03em;margin:0 0 20px}.key{color:#8194ae;font-size:11px;margin:15px 0 4px}.value{font-size:13px;font-weight:700;color:#153d7b;overflow-wrap:anywhere;line-height:1.7}
+.pill{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;background:#ebf5ff;border-radius:30px;font-size:11px;color:#1364c3;font-weight:800}
+.dot{height:8px;width:8px;background:#2689ea;border-radius:50%}
+button{font-family:inherit;border:0;border-radius:11px;padding:14px 22px;background:#155eef;color:#fff;cursor:pointer;font-size:12px;font-weight:800;min-height:48px;box-shadow:0 9px 23px #1657c52b}
+button:hover{background:#0c49c4}button:disabled{cursor:wait;opacity:.7}button.secondary{background:#e7f1ff;color:#1456b4;box-shadow:none}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.small{font-size:10px;line-height:1.85;color:#8494ab}.status{display:block;margin-top:15px;font-size:12px;padding:15px 16px;border-radius:12px;background:#eaf3ff;color:#265c99;line-height:1.9}
+.status.error{background:#fff1ed;color:#a43a2e}.status.success{background:#e8f8ee;color:#17703d}
+code{font-size:11px;overflow-wrap:anywhere}
+.proof{background:#0c2d62;border-radius:16px;color:white;padding:19px 21px;display:none;margin-top:18px}
+.proof strong{display:block;margin:0 0 8px;color:#cff3ff}.proof a{color:#a5d9ff}.proof code{color:#fff}
+.notice{border:1px solid #dbe5f2;border-radius:14px;padding:17px 20px;background:#fff;margin-top:19px}
+.notice b{font-size:12px;color:#174d8b}.notice p{font-size:11px;margin:6px 0 0}
+@media(max-width:690px){.wrap{padding:20px 12px 45px}.hero{margin-top:22px;padding:29px 21px}.grid{grid-template-columns:1fr}.panel{padding:20px}.back{font-size:10px}.brand{font-size:17px}button{width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="top"><div class="brand"><span class="mark">A</span>AUREVA</div><a class="back" href="/">← Trở lại website</a></div>
+ <header class="hero">
+  <div class="kicker">AUREVA · ETHEREUM SEPOLIA TESTNET</div>
+  <h1>Triển khai Blockchain.<br/><em>Không cần chia sẻ khóa ví.</em></h1>
+  <p class="lead">Kết nối MetaMask với đúng ví đã nhận Sepolia ETH. AUREVA sẽ gửi yêu cầu tạo hợp đồng <strong>AurevaRegistry</strong> tới ví của bạn. Bạn tự xem phí gas và xác nhận trong MetaMask. Không cần cung cấp seed phrase hoặc private key cho website.</p>
+  <span class="pill"><span class="dot"></span>Chỉ mạng Sepolia · chain ID 11155111</span>
+  <div class="actions"><button id="connect">1. Kết nối MetaMask</button><button class="secondary" id="deploy" disabled>2. Deploy smart contract</button></div>
+  <div class="status" id="status" role="status" aria-live="polite">Chưa kết nối ví. Cần tiện ích MetaMask trên trình duyệt.</div>
+ </header>
+ <main class="grid">
+  <section class="panel"><h2>Ví triển khai</h2><div class="key">Địa chỉ công khai</div><div class="value" id="account">Chưa kết nối</div><div class="key">Mạng</div><div class="value" id="network">Chưa kết nối</div><div class="key">Số dư Sepolia ETH</div><div class="value" id="balance">—</div></section>
+  <section class="panel"><h2>Hợp đồng AUREVA Registry</h2><div class="key">Mã nguồn biên dịch</div><div class="value">AurevaRegistry.sol · Solidity 0.8.30</div><div class="key">Chức năng</div><div class="value">owner · record(bytes32) · recordedAt(bytes32)</div><div class="key">Ghi chú</div><p class="small">Việc deploy chỉ tạo hợp đồng testnet, không xác nhận quyên góp hay chuyển tiền thật. Một giao dịch gas sẽ được trừ bằng Sepolia ETH thử nghiệm.</p></section>
+ </main>
+ <section class="proof" id="proof">
+  <strong>Đã có giao dịch deploy</strong>
+  <div class="key">Transaction hash</div><code id="tx"></code><br/><a id="txlink" href="#" target="_blank" rel="noreferrer">Xem giao dịch trên Sepolia Etherscan ↗</a>
+  <div class="key">Contract address (chỉ có khi giao dịch thành công)</div><code id="contract">Đang chờ xác nhận…</code>
+  <div class="actions"><button id="copy" class="secondary" type="button" disabled>Sao chép địa chỉ hợp đồng</button></div>
+ </section>
+ <aside class="notice"><b>Giới hạn an toàn</b><p>Trang này không thu thập khóa riêng. Khóa Alchemy RPC bạn đã gửi trước đó không được gắn vào trang web. Chỉ bấm xác nhận khi MetaMask hiển thị chính xác mạng Sepolia và ví bạn muốn dùng. Sau deploy cần cấu hình backend để ghi bằng chứng; deploy riêng chưa có nghĩa là luồng xác thực đã chạy.</p></aside>
+</div>
+<script type="module">
+const provider=window.ethereum, id='0xaa36a7'; // 11155111
+const $=(selector)=>document.getElementById(selector);
+let connectedAccount=null, activeTx=null;
+const status=(message,error=false)=>{$('status').textContent=message;$('status').className='status '+(error?'error':'')};
+function shortError(e){const code=e?.code;if(code===4001)return 'Bạn đã hủy yêu cầu trên MetaMask.';return 'Không thực hiện được. '+(e?.shortMessage||e?.message||'Kiểm tra kết nối MetaMask.').slice(0,180)}
+async function network(){
+ const cid=await provider.request({method:'eth_chainId'});
+ $('network').textContent=cid===id?'Ethereum Sepolia (11155111)':'Mạng khác ('+parseInt(cid,16)+')';
+ return cid===id;
+}
+async function switchToSepolia(){
+ try{await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:id}]})}
+ catch(e){if(e?.code!==4902)throw e;
+   await provider.request({method:'wallet_addEthereumChain',params:[{chainId:id,chainName:'Sepolia test network',nativeCurrency:{name:'Sepolia Ether',symbol:'ETH',decimals:18},rpcUrls:['https://ethereum-sepolia-rpc.publicnode.com'],blockExplorerUrls:['https://sepolia.etherscan.io']}]});
+   await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:id}]});
+ }
+}
+async function refresh(){
+ if(!provider||!connectedAccount)return;
+ $('account').textContent=connectedAccount;
+ const valid=await network();
+ const balance=valid?BigInt(await provider.request({method:'eth_getBalance',params:[connectedAccount,'latest']})):0n;
+ $('balance').textContent=valid?(Number(balance)/1e18).toLocaleString('vi-VN',{maximumFractionDigits:7})+' ETH':'Chuyển sang Sepolia để xem';
+ $('deploy').disabled=!valid;
+}
+$('connect').addEventListener('click',async()=>{
+ if(!provider){status('Chưa phát hiện MetaMask. Hãy mở bằng trình duyệt có MetaMask.',true);return}
+ $('connect').disabled=true;
+ try{const ac=await provider.request({method:'eth_requestAccounts'});if(!ac?.length)throw Error('Chưa chọn tài khoản.');
+  await switchToSepolia();connectedAccount=ac[0];await refresh();
+  status('Đã kết nối ví. Kiểm tra số dư và bấm Deploy khi sẵn sàng.');
+ }catch(e){status(shortError(e),true)}
+ finally{$('connect').disabled=false}
+});
+$('deploy').addEventListener('click',async()=>{
+ if(!provider||!connectedAccount)return;
+ $('deploy').disabled=true;
+ try{
+  if(!await network())throw Error('Ví không ở mạng Sepolia.');
+  const response=await fetch('/aureva-registry-artifact.json',{cache:'no-store'});
+  if(!response.ok)throw Error('Không lấy được bản biên dịch hợp đồng.');
+  const artifact=await response.json();
+  if(!/^0x[0-9a-fA-F]+$/.test(artifact.bytecode)||artifact.bytecode.length<100)throw Error('Bytecode hợp đồng không hợp lệ.');
+  const balance=BigInt(await provider.request({method:'eth_getBalance',params:[connectedAccount,'latest']}));
+  if(balance===0n)throw Error('Ví chưa có Sepolia ETH. Vui lòng nạp ETH testnet.');
+  status('MetaMask chuẩn bị hiện xác nhận deploy. Hãy xem phí gas và địa chỉ ví trước khi đồng ý.');
+  const txHash=await provider.request({method:'eth_sendTransaction',params:[{from:connectedAccount,data:artifact.bytecode,value:'0x0'}]});
+  activeTx=txHash;$('proof').style.display='block';$('tx').textContent=txHash;
+  $('txlink').href='https://sepolia.etherscan.io/tx/'+txHash;
+  $('contract').textContent='Chờ xác nhận trên Sepolia…';
+  status('Đã gửi giao dịch. Đang đợi Sepolia xác nhận, có thể mất vài phút.');
+  const started=Date.now();
+  while(Date.now()-started<180000){
+   const receipt=await provider.request({method:'eth_getTransactionReceipt',params:[txHash]});
+   if(receipt){
+    if(receipt.status!=='0x1'||!receipt.contractAddress)throw Error('Giao dịch deploy không thành công. Kiểm tra Etherscan.');
+    $('contract').textContent=receipt.contractAddress;
+    $('copy').disabled=false;$('status').className='status success';
+    $('status').textContent='Deploy thành công. Sao chép địa chỉ hợp đồng và giữ transaction hash để cấu hình backend.';
+    return;
+   }
+   await new Promise(resolve=>setTimeout(resolve,7000));
+  }
+  status('Giao dịch đã gửi nhưng chưa có receipt trong 3 phút. Kiểm tra hash trên Etherscan.');
+ }catch(e){status(shortError(e),true)}
+ finally{$('deploy').disabled=false}
+});
+$('copy').addEventListener('click',async()=>{
+ const val=$('contract').textContent;
+ if(!/^0x[0-9a-fA-F]{40}$/.test(val||''))return;
+ try{await navigator.clipboard.writeText(val);status('Đã sao chép địa chỉ hợp đồng.')}catch{status('Không sao chép được tự động. Hãy chọn và sao chép địa chỉ.')}
+});
+provider?.on?.('accountsChanged',accounts=>{connectedAccount=accounts?.[0]??null;refresh().catch(()=>{});if(!connectedAccount)status('Ví đã ngắt kết nối.')});
+provider?.on?.('chainChanged',()=>{refresh().catch(()=>{})});
+</script>
+</body></html>
