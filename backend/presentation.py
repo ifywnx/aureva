@@ -108,3 +108,30 @@ def pop_schema(token) -> None:
 
 def is_presentation_request() -> bool:
     return _active_schema.get() == SCHEMA
+
+
+
+def reserve_public_ai_quota(db, kind: str, daily_limit: int) -> None:
+    """Bound total paid-model calls even when visitors share/VPN-switch IPs.
+
+    Call inside a DB write transaction before requesting a provider.
+    Counts are per demo database, per UTC day. PIN-gated private Preview
+    and normal Production visitors are unaffected by this budget.
+    """
+    if not is_presentation_request() or not public_demo_enabled():
+        return
+    from fastapi import HTTPException
+    if kind not in ('invoice', 'assistant'):
+        raise ValueError('Unsupported AI quota kind')
+    now = int(time.time())
+    expires = (now // 86400 + 1) * 86400
+    key = f'public-demo-ai:{kind}:{now // 86400}'
+    row = db.execute('SELECT count FROM attempts WHERE key=?', (key,)).fetchone()
+    count = int(row['count']) if row else 0
+    if count >= daily_limit:
+        raise HTTPException(429, 'DEMO đã dùng hết lượt AI hôm nay. Hãy thử lại sau hoặc liên hệ nhóm.')
+    db.execute(
+        'INSERT INTO attempts(key,count,expires) VALUES(?,?,?) '
+        'ON CONFLICT(key) DO UPDATE SET count=excluded.count,expires=excluded.expires',
+        (key, count + 1, expires),
+    )
