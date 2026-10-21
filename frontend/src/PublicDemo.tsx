@@ -2,7 +2,7 @@ import {useEffect, useState, type FormEvent} from 'react';
 import {
  ArrowLeft, ArrowRight, CheckCircle2, ClipboardCheck, FileCheck2,
  FileText, HeartHandshake, LayoutDashboard, LockKeyhole, Plus,
- RotateCcw, ShieldCheck, Sparkles, Wallet, AlertTriangle
+ RotateCcw, ShieldCheck, Sparkles, AlertTriangle
 } from 'lucide-react';
 import './PublicDemo.css';
 
