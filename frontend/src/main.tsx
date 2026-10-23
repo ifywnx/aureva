@@ -33,6 +33,8 @@ function App(){
  const [reports,setReports]=useState<ReportInfo[]>([]);
  const [dashboardState,setDashboardState]=useState<'loading'|'ready'|'failed'>('loading');
  const [page,setPage]=useState('overview'),[modal,setModal]=useState(''),[selected,setSelected]=useState<Campaign|null>(null),[detail,setDetail]=useState<Detail|null>(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[campaignQuery,setCampaignQuery]=useState('');
+ const [quickRole,setQuickRole]=useState<'donor'|'manager'|'approver'|null>(null);
+ const [teamCode,setTeamCode]=useState('');
  const [demoEnabled,setDemoEnabled]=useState(false);
  const [demoMode,setDemoMode]=useState('off');
  async function refresh(u:User|null=user,keepDetail=true){
@@ -46,6 +48,15 @@ function App(){
  useEffect(()=>{api<User>('/auth/me').then(u=>{setUser(u);return refresh(u)}).catch(()=>refresh(null).catch(e=>setError(e.message)));},[]);
  useEffect(()=>{api<{enabled:boolean;mode:string}>('/demo/status').then(data=>{setDemoEnabled(data.enabled===true);setDemoMode(data.mode||'off')}).catch(()=>{setDemoEnabled(false);setDemoMode('off')});},[]);
  async function run(action:()=>Promise<void>){setBusy(true);setError('');setNotice('');try{await action();return true}catch(e){setError(e instanceof Error?e.message:'Không kết nối được máy chủ.');return false}finally{setBusy(false)}}
+ async function quickLogin(role:'donor'|'manager'|'approver'){
+  await run(async()=>{
+   const account=await api<User>('/auth/quick-login',{role,team_code:teamCode});
+   setUser(account);setQuickRole(null);setTeamCode('');setModal('');
+   await refresh(account,false);
+   setPage(role==='donor'?'campaigns':'workspace');
+   setNotice('Đã đăng nhập tài khoản AUREVA.');
+  });
+ }
  async function exitPresentation(){
   await run(async()=>{
    await api('/demo/lock',{});
@@ -154,7 +165,17 @@ function App(){
  <AurevaChat/>
  <AnimatePresence>{modal&&<motion.div className="overlay" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:reducedMotion?0:.2}} onClick={()=>!busy&&setModal('')}><motion.section role="dialog" aria-modal="true" aria-labelledby="modal-title" className="modal" initial={reducedMotion?false:{opacity:0,scale:.94,y:18}} animate={{opacity:1,scale:1,y:0}} exit={reducedMotion?{opacity:1}:{opacity:0,scale:.97,y:12}} transition={{type:'spring',stiffness:300,damping:28}} onClick={e=>e.stopPropagation()}><button className="close icon-btn" aria-label="Đóng" disabled={busy} onClick={()=>setModal('')}><X size={20}/></button><div className="eyebrow">AUREVA</div><h2 id="modal-title">{{login:'Chào mừng trở lại',register:'Tham gia đóng góp',campaign:'Tạo chiến dịch cứu trợ',donation:isDemoDonor?'Ghi nhận đóng góp DEMO':'Ghi nhận đóng góp',expense:'Đề xuất khoản chi'}[modal]}</h2>{error&&<div role="alert" className="alert error">{error}</div>}<form onSubmit={submit}>{modal==='register'&&<Field name="name" label="Họ và tên" minLength={2}/ >}{['login','register'].includes(modal)&&<><Field name="email" label="Email" type="email"/><Field name="password" label="Mật khẩu" type="password" minLength={10}/><p className="muted">{modal==='register'?'Tối thiểu 10 ký tự. Tài khoản mới có quyền người đóng góp.':'Sử dụng tài khoản đã đăng ký hoặc được người quản trị cấp.'}</p></>}{modal==='campaign'&&<><Field name="title" label="Tên chiến dịch" minLength={5}/><Field name="location" label="Địa bàn cứu trợ" minLength={2}/><label>Mô tả<textarea name="description" required minLength={10} maxLength={3000} rows={4}/></label></>}{['campaign','donation','expense'].includes(modal)&&<Field name="amount" label={modal==='campaign'?'Mục tiêu quyên góp (VND)':'Số tiền (VND)'} type="number"/>}{modal==='donation'&&<>{isDemoDonor
  ?<div className="demo-payment-disclaimer" role="note"><ShieldCheck size={19}/><div><strong>Chế độ mô phỏng — không thanh toán</strong><p>Nhập số tiền giả định để thử quy trình. Hệ thống tự tạo mã DEMO; không yêu cầu chuyển khoản, không trừ tiền ngân hàng hoặc ETH.</p></div></div>
- :<><Field name="reference" label="Mã tham chiếu chuyển khoản" minLength={3}/><p className="muted">Chức năng này chỉ lưu thông tin khoản chuyển khoản bên ngoài website. AUREVA không nhận tiền và chưa tự xác minh giao dịch ngân hàng; người phụ trách phải đối soát thủ công.</p></>}</>}{modal==='expense'&&<><Field name="vendor" label="Đơn vị nhận tiền / nhà cung cấp" minLength={2}/><Field name="purpose" label="Nội dung khoản chi" minLength={5}/><p className="muted">Khoản chi sẽ chờ người có thẩm quyền duyệt. Sau khi tạo, hãy tải chứng từ và bấm phân tích AI trong Không gian làm việc.</p></>}<button disabled={busy} className="btn primary full">{busy?'Đang xử lý…':modal==='login'?'Đăng nhập':modal==='register'?'Tạo tài khoản':modal==='donation'&&isDemoDonor?'Lưu đóng góp mô phỏng':'Lưu thông tin'}</button></form>{modal==='login'&&<button className="text-btn" onClick={()=>open('register')}>Chưa có tài khoản? Đăng ký đóng góp</button>}{modal==='register'&&<button className="text-btn" onClick={()=>open('login')}>Đã có tài khoản? Đăng nhập</button>}</motion.section></motion.div>}</AnimatePresence></div>
+ :<><Field name="reference" label="Mã tham chiếu chuyển khoản" minLength={3}/><p className="muted">Chức năng này chỉ lưu thông tin khoản chuyển khoản bên ngoài website. AUREVA không nhận tiền và chưa tự xác minh giao dịch ngân hàng; người phụ trách phải đối soát thủ công.</p></>}</>}{modal==='expense'&&<><Field name="vendor" label="Đơn vị nhận tiền / nhà cung cấp" minLength={2}/><Field name="purpose" label="Nội dung khoản chi" minLength={5}/><p className="muted">Khoản chi sẽ chờ người có thẩm quyền duyệt. Sau khi tạo, hãy tải chứng từ và bấm phân tích AI trong Không gian làm việc.</p></>}<button disabled={busy} className="btn primary full">{busy?'Đang xử lý…':modal==='login'?'Đăng nhập':modal==='register'?'Tạo tài khoản':modal==='donation'&&isDemoDonor?'Lưu đóng góp mô phỏng':'Lưu thông tin'}</button></form>{modal==='login'&&<div className="quick-login-team" style={{marginTop:16,padding:16,border:'1px solid var(--border, #ddd)',borderRadius:16}}>
+ <strong>Đăng nhập nhanh dành cho thành viên nhóm</strong>
+ <p className="muted">Sử dụng tài khoản thật trên AUREVA. Chỉ thành viên có mã truy cập nhóm mới được đăng nhập.</p>
+ <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:10}}>
+ {([['donor','Người đóng góp'],['manager','Người phụ trách'],['approver','Người phê duyệt']] as const).map(([role,label])=><button key={role} type="button" className="btn secondary" onClick={()=>setQuickRole(role)}>{label}</button>)}
+ </div>
+ {quickRole&&<div style={{marginTop:12}}>
+  <label>Mã truy cập nhóm<input type="password" value={teamCode} onChange={e=>setTeamCode(e.target.value)} autoComplete="off" maxLength={128} placeholder="Nhập mã do trưởng nhóm cấp"/></label>
+  <button type="button" className="btn primary full" disabled={busy||!teamCode} onClick={()=>void quickLogin(quickRole)}>Đăng nhập nhanh</button>
+ </div>}
+ </div>}{modal==='login'&&<button className="text-btn" onClick={()=>open('register')}>Chưa có tài khoản? Đăng ký đóng góp</button>}{modal==='register'&&<button className="text-btn" onClick={()=>open('login')}>Đã có tài khoản? Đăng nhập</button>}</motion.section></motion.div>}</AnimatePresence></div>
 }
 function Field({name,label,type='text',minLength}:{name:string;label:string;type?:string;minLength?:number}){return <label>{label}<input name={name} type={type} required minLength={minLength} maxLength={type==='password'?128:200} min={type==='number'?1:undefined} max={type==='number'?1000000000000:undefined} step={type==='number'?1:undefined} autoComplete={type==='password'?'current-password':name==='email'?'email':undefined}/></label>}
 function Metric({label,value,icon}:{label:string;value:string;icon?:React.ReactNode}){
