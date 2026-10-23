@@ -10,8 +10,6 @@ import {CampaignCoverEditor} from './CampaignCoverEditor';
 import {ActivityInsights} from './ActivityInsights';
 import {JourneyFlow} from './JourneyFlow';
 import {AurevaChat} from './AurevaChat';
-import {PublicDemo} from './PublicDemo';
-import {PresentationGate} from './PresentationGate';
 import {DemoRoleBar,type DemoRole} from './DemoRoleBar';
 import {PublicIntro,HumanStory,TechnologyShowcase,TransparencyHub} from './AurevaStory';
 import './style.css';
@@ -172,15 +170,4 @@ function Metric({label,value,icon}:{label:string;value:string;icon?:React.ReactN
 function Records({items,action,publicView=false}:{items:RecordItem[];action?:(r:RecordItem)=>React.ReactNode;publicView?:boolean}){return !items.length?<div className="empty compact">Chưa có giao dịch phù hợp.</div>:<div className="records">{items.map(r=><article key={r.id}><div className="record-line"><div><b>{r.purpose||r.campaign_title||'Đóng góp cứu trợ'}</b><small>{new Date(r.created).toLocaleString('vi-VN')}{!publicView&&r.reference?' · Mã: '+r.reference:''}{!publicView&&r.vendor?' · '+r.vendor:''}</small></div><strong>{money(r.amount)}</strong><span className={'badge '+(r.status||'confirmed')}>{statuses[r.status]||'Đã đối soát'}</span></div>{r.reason&&<p className="reason">Lý do: {r.reason}</p>}{action?.(r)}</article>)}</div>}
 // The public entry now unlocks a REAL backend, scoped to a dedicated demo schema.
 // The previous browser-only simulation remains at ?sandbox=1 for offline exercises.
-const query = new URLSearchParams(window.location.search);
-const presentationRequested = query.get('demo') === '1';
-const offlineSandboxRequested = query.get('sandbox') === '1';
-const liveSiteRequested = query.get('site') === '1';
-function VisitorEntry(){
- // Production is the default experience. Presentation access is explicit only.
- // Do not automatically grant a demo session to every visitor.
- if(offlineSandboxRequested)return <PublicDemo/>;
- if(presentationRequested)return <PresentationGate><App/></PresentationGate>;
- return <App/>;
-}
-createRoot(document.getElementById('root')!).render(<VisitorEntry/>);
+createRoot(document.getElementById('root')!).render(<App/>);
