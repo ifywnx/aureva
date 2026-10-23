@@ -197,6 +197,40 @@ def login(payload: Login, request: Request, response: Response):
     response.set_cookie('aureva_session', token, httponly=True, samesite='strict', secure=os.getenv('AUREVA_SECURE_COOKIE')=='1', max_age=28800)
     return result
 
+class QuickLogin(Input):
+    role: Literal['donor', 'manager', 'approver']
+    team_code: str = Field(min_length=1, max_length=128)
+
+@app.post('/api/auth/quick-login')
+def quick_login(payload: QuickLogin, request: Request, response: Response):
+    """Sign in to an existing production account; never create or impersonate a role."""
+    expected = os.getenv('AUREVA_TEAM_ACCESS_CODE', '')
+    if len(expected) < 16:
+        raise HTTPException(503, 'Đăng nhập nhanh chưa được quản trị viên cấu hình.')
+    ip = request.client.host if request.client else 'unknown'
+    key = 'team-quick:' + digest(ip)
+    timestamp = int(time.time())
+    with connect(write=True) as db:
+        attempt = db.execute('SELECT count,expires FROM attempts WHERE key=?', (key,)).fetchone()
+        if attempt and attempt['expires'] > timestamp and attempt['count'] >= 5:
+            return JSONResponse({'detail':'Quá nhiều lần thử. Vui lòng thử lại sau 15 phút.'}, status_code=429)
+        if not hmac.compare_digest(payload.team_code, expected):
+            count = attempt['count']+1 if attempt and attempt['expires'] > timestamp else 1
+            db.execute('INSERT INTO attempts VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET count=excluded.count,expires=excluded.expires', (key,count,timestamp+900))
+            return JSONResponse({'detail':'Mã truy cập nhóm không đúng.'}, status_code=401)
+        email = os.getenv('AUREVA_QUICK_'+payload.role.upper()+'_EMAIL', '').strip().lower()
+        if not email:
+            raise HTTPException(503, 'Chưa cấu hình tài khoản cho vai trò này.')
+        user = db.execute('SELECT * FROM users WHERE email=? AND role=?', (email,payload.role)).fetchone()
+        if not user or user['id'].startswith('aureva_demo_'):
+            raise HTTPException(503, 'Tài khoản thật chưa được tạo hoặc vai trò chưa đúng.')
+        db.execute('DELETE FROM attempts WHERE key=?', (key,))
+        token = secrets.token_urlsafe(32)
+        db.execute('INSERT INTO sessions VALUES(?,?,?)', (digest(token),user['id'],timestamp+28800))
+        result = public_user(user)
+    response.set_cookie('aureva_session',token,httponly=True,samesite='strict',secure=os.getenv('AUREVA_SECURE_COOKIE')=='1' or bool(os.getenv('VERCEL')),max_age=28800)
+    return result
+
 @app.get('/api/auth/me')
 def me(user=Depends(current_user)): return public_user(user)
 @app.post('/api/auth/logout')
