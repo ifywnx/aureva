@@ -177,22 +177,10 @@ const presentationRequested = query.get('demo') === '1';
 const offlineSandboxRequested = query.get('sandbox') === '1';
 const liveSiteRequested = query.get('site') === '1';
 function VisitorEntry(){
- const [openToEveryone,setOpenToEveryone]=useState<boolean|null>(null);
- useEffect(()=>{
-  // The offline sandbox must NEVER make API requests, even to discover DEMO.
-  if(offlineSandboxRequested||liveSiteRequested){
-   setOpenToEveryone(false);
-   return;
-  }
-  fetch('/api/demo/config',{credentials:'same-origin',cache:'no-store'})
-   .then(async response=>response.ok?response.json():null)
-   .then(info=>setOpenToEveryone(info?.public_demo===true))
-   .catch(()=>setOpenToEveryone(false));
- },[]);
+ // Production is the default experience. Presentation access is explicit only.
+ // Do not automatically grant a demo session to every visitor.
  if(offlineSandboxRequested)return <PublicDemo/>;
- if(liveSiteRequested)return <App/>;
- if(presentationRequested || openToEveryone===true)return <PresentationGate><App/></PresentationGate>;
- if(openToEveryone===null)return <div className="pg-loading" role="status">Đang mở AUREVA…</div>;
+ if(presentationRequested)return <PresentationGate><App/></PresentationGate>;
  return <App/>;
 }
 createRoot(document.getElementById('root')!).render(<VisitorEntry/>);
